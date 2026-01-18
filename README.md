@@ -1,4 +1,6 @@
+
 # AeroSwift AI - Airport Passenger Recognition System
+![AeroSwift AI](logo.jpg)
 
 A complete real-time airport passenger recognition and boarding assistance system consisting of a camera streaming server with AI-powered people detection and a modern web application for displaying live feeds and passenger information.
 

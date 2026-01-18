@@ -1,7 +1,5 @@
 # AeroSwift AI - Web Application
 
-[Aeroswift AI](logo.jpg)
-
 A real-time airport passenger recognition and boarding assistance web application built with Svelte 5, Tailwind CSS, and Solace PubSub+. The application displays live camera feeds and passenger information for streamlined boarding operations.
 
 ## Features
