@@ -11,7 +11,7 @@ A complete real-time airport passenger recognition and boarding assistance syste
 
 This project provides an end-to-end solution for airport boarding operations:
 
-1. **Camera Streaming Server**: Captures video from ESP32 cameras, performs real-time people detection using YOLOv8, and publishes frames and analytics via Solace PubSub+
+1. **Camera Streaming Server**: Captures video from ESP32 cameras, performs real-time people detection using YOLOv8, and publishes frames and analytics via Solace PubSub
 2. **Web Application**: Displays live camera feeds and passenger information in a modern, responsive interface
 
 ## Architecture
@@ -29,10 +29,10 @@ This project provides an end-to-end solution for airport boarding operations:
 │  - YOLOv8 People Detection  │
 │  - MQTT Publishing          │
 └────────┬────────────────────┘
-         │ Solace PubSub+ (MQTT)
+         │ Solace PubSub (MQTT)
          ▼
 ┌─────────────────────────────┐
-│   Solace PubSub+ Broker     │
+│   Solace PubSub Broker      │
 │   (Message Router)          │
 └────────┬────────────────────┘
          │ WebSocket
@@ -52,7 +52,7 @@ This project provides an end-to-end solution for airport boarding operations:
 Node.js server that connects to ESP32 cameras and provides:
 - Real-time video frame processing and streaming
 - YOLOv8-based people detection and counting
-- MQTT publishing via Solace PubSub+
+- MQTT publishing via Solace PubSub
 - RESTful API for stream control
 - Frame rate limiting and optimization
 
@@ -93,7 +93,7 @@ Modern Svelte 5 web application that displays:
 - Node.js v16 or higher
 - Python 3.8+ (for YOLOv8 model export)
 - ESP32 camera module (or use demo mode)
-- Solace PubSub+ broker (cloud or local)
+- Solace PubSub broker (cloud or local)
 
 ### 1. Setup Camera Streaming Server
 
@@ -139,9 +139,9 @@ Open your browser to `http://localhost:5173` to view the web application.
 
 ## Configuration
 
-### Solace PubSub+ Setup
+### Solace PubSub Setup
 
-Both projects require a Solace PubSub+ broker. You can:
+Both projects require a Solace PubSub broker. You can:
 
 1. **Use Solace Cloud** (Free tier available):
    - Sign up at https://solace.com/cloud/
@@ -368,7 +368,7 @@ Contributions are welcome! Please:
 
 ## Acknowledgments
 
-- **Solace PubSub+** for real-time messaging infrastructure
+- **Solace PubSub** for real-time messaging infrastructure
 - **YOLOv8** (Ultralytics) for state-of-the-art object detection
 - **Svelte** for reactive UI framework
 - **ESP32** community for camera module support
