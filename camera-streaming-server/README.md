@@ -10,8 +10,9 @@ A Node.js server that consumes video streams from ESP32 camera modules and publi
 - RESTful API for stream control
 - Chunked frame transmission for large video frames
 - Health monitoring and status endpoints
-- **Real-time people detection and counting using YOLOv8**
-- **Periodic analytics publishing with person count and bounding boxes**
+- **Real-time face detection using YOLOv8**
+- **Emotion detection using face-api.js**
+- **Periodic analytics publishing with face count, bounding boxes, and emotions**
 
 ## Setup
 
@@ -34,9 +35,12 @@ cp .env.example .env
    - `MAX_FPS`: Maximum frames per second (0 = unlimited, e.g., 10 for 10 fps)
    - `MIN_FRAME_INTERVAL_MS`: Minimum milliseconds between frames (0 = no throttling, overridden by MAX_FPS)
    - `ENABLE_PEOPLE_DETECTION`: Enable/disable people detection (true/false)
+   - `ENABLE_FACE_DETECTION`: Enable/disable face detection (true/false)
+   - `ENABLE_EMOTION_DETECTION`: Enable/disable emotion detection (true/false)
    - `DETECTION_INTERVAL_MS`: How often to run detection in milliseconds (e.g., 2000 for every 2 seconds)
-   - `DETECTION_CONFIDENCE_THRESHOLD`: Minimum confidence score for person detection (0.0-1.0, default: 0.5)
+   - `DETECTION_CONFIDENCE_THRESHOLD`: Minimum confidence score for detection (0.0-1.0, default: 0.5)
    - `ANALYTICS_TOPIC`: MQTT topic for publishing analytics data
+   - `FACE_MODEL_TYPE`: Face detection model (yolov8n-face or face_detection_yunet_2023mar)
    - Other configuration as needed
 
 The video topic will be constructed as `{VIDEO_TOPIC_PREFIX}/{ACTIVE_TOPIC}` (e.g., `video/esp32/aircanada`)
@@ -263,3 +267,104 @@ Analytics are published to the configured `ANALYTICS_TOPIC` as JSON:
 - Detection typically takes 200-800ms per frame depending on image size
 - Adjust `DETECTION_INTERVAL_MS` based on your performance requirements
 - Recommended threshold: 0.4-0.6 for best balance of accuracy and false positives
+
+## Face Detection & Emotion Recognition
+
+The server supports real-time face detection and emotion recognition using YOLOv8 for face detection and face-api.js for emotion analysis.
+
+### Setup
+
+**1. Download the YOLOv8 face detection model:**
+
+The face detection model should already be in the `models/` directory. If not, ensure `yolov8n-face.onnx` is present.
+
+**2. Download face-api.js models for emotion detection:**
+
+```bash
+node download-faceapi-models.js
+```
+
+This will copy the required models from the npm package to your `models/` directory:
+- `tiny_face_detector_model` - Fast face detection
+- `face_expression_model` - Emotion recognition
+
+### Configuration
+
+```bash
+ENABLE_FACE_DETECTION=true
+ENABLE_EMOTION_DETECTION=true
+DETECTION_INTERVAL_MS=2000
+DETECTION_CONFIDENCE_THRESHOLD=0.5
+ANALYTICS_TOPIC=aeroswift/camera/analytics/gate1
+FACE_MODEL_TYPE=yolov8n-face
+```
+
+### Analytics Message Format with Emotions
+
+When emotion detection is enabled, analytics include emotion data:
+
+```json
+{
+  "timestamp": "2024-01-01T00:00:00.000Z",
+  "faceCount": 2,
+  "detections": [
+    {
+      "confidence": 0.92,
+      "bbox": {
+        "x": 120,
+        "y": 80,
+        "width": 150,
+        "height": 180
+      },
+      "emotions": {
+        "happy": 0.85,
+        "neutral": 0.10,
+        "sad": 0.03,
+        "angry": 0.01,
+        "surprised": 0.01,
+        "fearful": 0.00,
+        "disgusted": 0.00
+      },
+      "dominantEmotion": "happy",
+      "dominantScore": 0.85
+    }
+  ],
+  "frameSize": {
+    "width": 640,
+    "height": 480
+  },
+  "videoTopic": "aeroswift/terminal1/camera/gate1",
+  "model": "YOLOV8N-FACE-ONNX",
+  "emotionDetection": true
+}
+```
+
+### Detected Emotions
+
+The system detects 7 basic emotions:
+- **happy** - Smiling, joyful expression
+- **sad** - Downturned mouth, drooping features
+- **angry** - Furrowed brow, tense expression
+- **surprised** - Wide eyes, open mouth
+- **fearful** - Wide eyes, tense features
+- **disgusted** - Wrinkled nose, raised upper lip
+- **neutral** - Relaxed, expressionless face
+
+Each emotion has a confidence score (0.0-1.0), and the dominant emotion is the one with the highest score.
+
+### How It Works
+
+1. Video frames are captured from the ESP32 camera
+2. At the configured interval, YOLOv8 detects faces in the frame
+3. For each detected face, face-api.js analyzes facial expressions
+4. Emotion scores are calculated for all 7 emotions
+5. Analytics with face count, bounding boxes, and emotions are published to MQTT
+6. Detection runs asynchronously to avoid blocking video streaming
+
+### Performance Notes
+
+- Emotion detection adds ~100-300ms per face to processing time
+- Recommended to use with `DETECTION_INTERVAL_MS >= 2000` for smooth streaming
+- Works best with frontal or near-frontal face views
+- Lighting conditions affect emotion detection accuracy
+- Multiple faces are processed sequentially

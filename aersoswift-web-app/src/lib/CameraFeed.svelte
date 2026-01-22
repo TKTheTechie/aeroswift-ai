@@ -5,13 +5,16 @@
   
   let isActive = $state(false);
   let videoElement;
+  let canvasElement;
   let mediaSource = null;
   let sourceBuffer = null;
   let isConnected = $state(false);
   let connectionError = $state('');
   let hasReceivedFrame = $state(false);
+  let analyticsData = $state(null);
   
   const VIDEO_TOPIC = APP_CONFIG.videoTopic;
+  const ANALYTICS_TOPIC = APP_CONFIG.analyticsTopic;
   const solaceClient = new SolaceVideoClient(APP_CONFIG.solace);
   
   onMount(async () => {
@@ -25,6 +28,10 @@
       await solaceClient.subscribe(VIDEO_TOPIC, handleVideoMessage);
       isActive = true;
       console.log(`Subscribed to ${VIDEO_TOPIC}`);
+      
+      // Subscribe to analytics topic for bounding boxes
+      solaceClient.subscribeToTopic(ANALYTICS_TOPIC, handleAnalyticsMessage);
+      console.log(`Subscribed to ${ANALYTICS_TOPIC}`);
       
     } catch (error) {
       console.error('Failed to connect to Solace:', error);
@@ -45,6 +52,106 @@
     }
   });
   
+  function handleAnalyticsMessage(payload) {
+    analyticsData = payload;
+    drawBoundingBoxes();
+  }
+  
+  function getEmotionColor(emotion) {
+    const colors = {
+      happy: '#10b981',      // green
+      neutral: '#6b7280',    // gray
+      sad: '#3b82f6',        // blue
+      angry: '#ef4444',      // red
+      surprised: '#f59e0b',  // amber
+      fearful: '#8b5cf6',    // purple
+      disgusted: '#ec4899'   // pink
+    };
+    return colors[emotion] || '#00d4ff';
+  }
+  
+  function getEmotionEmoji(emotion) {
+    const emojis = {
+      happy: '😊',
+      neutral: '😐',
+      sad: '😢',
+      angry: '😠',
+      surprised: '😲',
+      fearful: '😨',
+      disgusted: '🤢'
+    };
+    return emojis[emotion] || '👤';
+  }
+  
+  function drawBoundingBoxes() {
+    if (!canvasElement || !videoElement || !analyticsData) return;
+    
+    const ctx = canvasElement.getContext('2d');
+    if (!ctx) return;
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+    
+    // Set canvas size to match video element
+    canvasElement.width = videoElement.width;
+    canvasElement.height = videoElement.height;
+    
+    // Get scale factors
+    const scaleX = videoElement.width / analyticsData.frameSize.width;
+    const scaleY = videoElement.height / analyticsData.frameSize.height;
+    
+    // Draw each detection
+    analyticsData.detections.forEach((detection, index) => {
+      const { x, y, width, height } = detection.bbox;
+      const confidence = detection.confidence;
+      const hasEmotions = detection.emotions && detection.dominantEmotion;
+      
+      // Scale coordinates to match displayed video size
+      const scaledX = x * scaleX;
+      const scaledY = y * scaleY;
+      const scaledWidth = width * scaleX;
+      const scaledHeight = height * scaleY;
+      
+      // Choose color based on emotion if available
+      const boxColor = hasEmotions ? getEmotionColor(detection.dominantEmotion) : '#00d4ff';
+      
+      // Draw bounding box
+      ctx.strokeStyle = boxColor;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(scaledX, scaledY, scaledWidth, scaledHeight);
+      
+      // Prepare labels
+      const labels = [];
+      labels.push(`Person ${index + 1}: ${(confidence * 100).toFixed(1)}%`);
+      
+      if (hasEmotions) {
+        const emoji = getEmotionEmoji(detection.dominantEmotion);
+        const emotionLabel = `${emoji} ${detection.dominantEmotion} (${(detection.dominantScore * 100).toFixed(0)}%)`;
+        labels.push(emotionLabel);
+      }
+      
+      // Draw labels
+      ctx.font = '14px Arial';
+      const lineHeight = 22;
+      const padding = 4;
+      
+      labels.forEach((label, labelIndex) => {
+        const textMetrics = ctx.measureText(label);
+        const textWidth = textMetrics.width + (padding * 2);
+        const textHeight = 20;
+        const yOffset = scaledY - ((labels.length - labelIndex) * lineHeight);
+        
+        // Draw label background
+        ctx.fillStyle = labelIndex === 0 ? 'rgba(0, 212, 255, 0.9)' : `${boxColor}dd`;
+        ctx.fillRect(scaledX, yOffset, textWidth, textHeight);
+        
+        // Draw label text
+        ctx.fillStyle = '#fff';
+        ctx.fillText(label, scaledX + padding, yOffset + 15);
+      });
+    });
+  }
+  
   function handleVideoMessage(payload) {
     // Check if payload is a base64 image data URL
     if (typeof payload === 'string' && payload.startsWith('data:image/')) {
@@ -53,6 +160,8 @@
         videoElement.src = payload;
         videoElement.style.display = 'block';
         hasReceivedFrame = true;
+        // Redraw bounding boxes when new frame arrives
+        videoElement.onload = () => drawBoundingBoxes();
       }
       return;
     }
@@ -120,6 +229,13 @@
       style="display: none;"
       alt="Camera feed"
     />
+    
+    <!-- Canvas overlay for bounding boxes -->
+    <canvas 
+      bind:this={canvasElement}
+      class="absolute inset-0 w-full h-full object-cover pointer-events-none"
+      style="display: {hasReceivedFrame ? 'block' : 'none'};"
+    ></canvas>
     
     <!-- Placeholder overlay - only show when no frame received -->
     {#if !hasReceivedFrame}

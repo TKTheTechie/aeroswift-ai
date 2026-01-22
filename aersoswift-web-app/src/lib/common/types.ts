@@ -22,18 +22,32 @@ export interface Detection {
     width: number;
     height: number;
   };
+  emotions?: {
+    happy: number;
+    neutral: number;
+    sad: number;
+    angry: number;
+    surprised: number;
+    fearful: number;
+    disgusted: number;
+  };
+  dominantEmotion?: string;
+  dominantScore?: number;
 }
 
 export interface PeopleCount {
   peopleCount: number;
+  faceCount?: number;
   detections: Detection[];
   timestamp: string;
   frameSize: {
     width: number;
     height: number;
   };
-  activeTopic: string;
+  activeTopic?: string;
+  videoTopic?: string;
   model?: string;
+  emotionDetection?: boolean;
 }
 
 export interface SolaceConfig {

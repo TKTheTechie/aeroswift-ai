@@ -217,6 +217,30 @@ rm -rf .vite
 - Firefox
 - Safari (WebSocket support required)
 
+## Deployment
+
+### Deploy to Vercel
+
+This application is ready to deploy to Vercel. See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed instructions.
+
+**Quick Deploy:**
+
+1. Push your code to GitHub/GitLab/Bitbucket
+2. Import the project in [Vercel](https://vercel.com)
+3. Add environment variables in project settings
+4. Deploy!
+
+**Environment Variables for Vercel:**
+- `VITE_SOLACE_URL`
+- `VITE_SOLACE_VPN`
+- `VITE_SOLACE_USERNAME`
+- `VITE_SOLACE_PASSWORD`
+- `VITE_VIDEO_TOPIC`
+- `VITE_ANALYTICS_TOPIC`
+- `VITE_DEMO_MODE`
+
+For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md).
+
 ## License
 
 MIT

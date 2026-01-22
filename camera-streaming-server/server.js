@@ -3,6 +3,8 @@ const mqtt = require('mqtt');
 const http = require('http');
 const WebSocket = require('ws');
 const YOLOv8Detector = require('./yolo-detector');
+const FaceDetector = require('./face-detector');
+const EmotionDetector = require('./emotion-detector');
 require('dotenv').config();
 
 class ESP32VideoStreamer {
@@ -18,6 +20,7 @@ class ESP32VideoStreamer {
     this.publishQueue = 0;
     this.droppedFrames = 0;
     this.detectionModel = null;
+    this.emotionDetector = null;
     this.lastDetectionTime = 0;
     this.detectionQueue = [];
     
@@ -41,11 +44,12 @@ class ESP32VideoStreamer {
         maxFps: parseInt(process.env.MAX_FPS) || 0 // 0 = unlimited
       },
       detection: {
-        enabled: process.env.ENABLE_PEOPLE_DETECTION === 'true',
+        enabled: process.env.ENABLE_FACE_DETECTION === 'true',
         intervalMs: parseInt(process.env.DETECTION_INTERVAL_MS) || 2000,
         confidenceThreshold: parseFloat(process.env.DETECTION_CONFIDENCE_THRESHOLD) || 0.5,
         analyticsTopic: process.env.ANALYTICS_TOPIC || 'video/esp32/analytics',
-        modelSize: process.env.YOLO_MODEL_SIZE || 'yolov8n'
+        modelType: process.env.FACE_MODEL_TYPE || 'yolov8n-face',
+        enableEmotions: process.env.ENABLE_EMOTION_DETECTION === 'true'
       }
     };
     
@@ -72,11 +76,11 @@ class ESP32VideoStreamer {
   }
 
   async loadDetectionModel() {
-    console.log('Initializing YOLOv8 detector...');
+    console.log('Initializing face detector...');
     try {
-      this.detectionModel = new YOLOv8Detector(
+      this.detectionModel = new FaceDetector(
         this.config.detection.confidenceThreshold,
-        this.config.detection.modelSize
+        this.config.detection.modelType
       );
       const success = await this.detectionModel.initialize();
       
@@ -84,14 +88,28 @@ class ESP32VideoStreamer {
         console.log(`  Detection interval: ${this.config.detection.intervalMs}ms`);
         console.log(`  Confidence threshold: ${this.config.detection.confidenceThreshold}`);
         console.log(`  Analytics topic: ${this.config.detection.analyticsTopic}`);
-        console.log(`  Model: ${this.config.detection.modelSize}`);
+        console.log(`  Model: ${this.config.detection.modelType}`);
+        
+        // Initialize emotion detector if enabled
+        if (this.config.detection.enableEmotions) {
+          console.log('Initializing emotion detector...');
+          this.emotionDetector = new EmotionDetector();
+          const emotionSuccess = await this.emotionDetector.initialize();
+          if (!emotionSuccess) {
+            console.warn('Emotion detection disabled - models not available');
+            this.emotionDetector = null;
+            this.config.detection.enableEmotions = false;
+          } else {
+            console.log('  Emotion detection enabled');
+          }
+        }
       } else {
-        console.error('Failed to initialize detector');
+        console.error('Failed to initialize face detector');
         this.config.detection.enabled = false;
         this.detectionModel = null;
       }
     } catch (error) {
-      console.error('Failed to load detection model:', error);
+      console.error('Failed to load face detection model:', error);
       this.config.detection.enabled = false;
       this.detectionModel = null;
     }
@@ -174,10 +192,11 @@ class ESP32VideoStreamer {
         active: this.streamActive,
         esp32Url: `http://${this.config.esp32.ip}:${this.config.esp32.port}${this.config.esp32.path}`,
         videoTopic: this.config.server.videoTopic,
-        peopleDetection: {
+        faceDetection: {
           enabled: this.config.detection.enabled,
           modelLoaded: this.detectionModel !== null,
-          intervalMs: this.config.detection.intervalMs
+          intervalMs: this.config.detection.intervalMs,
+          emotionDetection: this.emotionDetector !== null
         }
       });
     });
@@ -291,7 +310,7 @@ class ESP32VideoStreamer {
               this.publishVideoFrame(frame);
               this.lastFrameTime = now;
               
-              // Queue frame for people detection if enabled
+              // Queue frame for face detection if enabled
               if (this.config.detection.enabled && 
                   now - this.lastDetectionTime >= this.config.detection.intervalMs) {
                 this.queueFrameForDetection(frame);
@@ -404,36 +423,58 @@ class ESP32VideoStreamer {
       // Get image metadata
       const metadata = await sharp(frameData).metadata();
       
-      // Run YOLOv8 detection
-      const people = await this.detectionModel.detect(frameData);
+      // Run face detection
+      const faces = await this.detectionModel.detect(frameData);
+
+      let detections = faces.map(f => ({
+        confidence: f.confidence,
+        bbox: f.bbox
+      }));
+
+      // Run emotion detection if enabled and faces were found
+      if (this.emotionDetector && faces.length > 0) {
+        try {
+          const emotionResults = await this.emotionDetector.detectEmotions(frameData, faces);
+          
+          // Merge emotion data with face detections
+          if (emotionResults.length > 0) {
+            detections = emotionResults.map(er => ({
+              confidence: er.confidence,
+              bbox: er.bbox,
+              emotions: er.emotions,
+              dominantEmotion: er.dominantEmotion,
+              dominantScore: er.dominantScore
+            }));
+          }
+        } catch (error) {
+          console.error('Emotion detection error:', error.message);
+        }
+      }
 
       // Publish analytics
       const analytics = {
         timestamp: new Date().toISOString(),
-        peopleCount: people.length,
-        detections: people.map(p => ({
-          confidence: p.score,
-          bbox: {
-            x: p.box.xmin,
-            y: p.box.ymin,
-            width: p.box.xmax - p.box.xmin,
-            height: p.box.ymax - p.box.ymin
-          }
-        })),
+        faceCount: faces.length,
+        detections: detections,
         frameSize: {
           width: metadata.width,
           height: metadata.height
         },
         videoTopic: this.config.server.videoTopic,
-        model: `${this.config.detection.modelSize.toUpperCase()}-ONNX`
+        model: `${this.config.detection.modelType.toUpperCase()}-ONNX`,
+        emotionDetection: this.emotionDetector !== null
       };
 
       this.publishAnalytics(analytics);
       
-      if (people.length > 0) {
-        console.log(`People detected: ${people.length} (confidence >= ${this.config.detection.confidenceThreshold})`);
-        people.forEach((p, i) => {
-          console.log(`  Person ${i + 1}: ${(p.score * 100).toFixed(1)}% confidence`);
+      if (faces.length > 0) {
+        console.log(`Faces detected: ${faces.length} (confidence >= ${this.config.detection.confidenceThreshold})`);
+        detections.forEach((d, i) => {
+          let logMsg = `  Face ${i + 1}: ${(d.confidence * 100).toFixed(1)}% confidence`;
+          if (d.dominantEmotion) {
+            logMsg += ` - ${d.dominantEmotion} (${(d.dominantScore * 100).toFixed(1)}%)`;
+          }
+          console.log(logMsg);
         });
       }
     } catch (error) {
@@ -446,13 +487,24 @@ class ESP32VideoStreamer {
       return;
     }
 
+    const payload = JSON.stringify(analytics, null, 2);
+    
+    console.log('\n📊 Publishing Analytics:');
+    console.log('─────────────────────────────────────────');
+    console.log(`Topic: ${this.config.detection.analyticsTopic}`);
+    console.log('Payload:');
+    console.log(payload);
+    console.log('─────────────────────────────────────────\n');
+
     this.mqttClient.publish(
       this.config.detection.analyticsTopic,
-      JSON.stringify(analytics),
+      payload,
       { qos: 1 },
       (error) => {
         if (error) {
           console.error('Failed to publish analytics:', error.message);
+        } else {
+          console.log('✓ Analytics published successfully');
         }
       }
     );
