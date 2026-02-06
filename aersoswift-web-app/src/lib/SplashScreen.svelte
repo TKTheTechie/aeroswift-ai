@@ -1,6 +1,6 @@
 <script>
   import { Canvas } from '@threlte/core';
-  import SollyModel from './SollyModel.svelte';
+  import Scene from './Scene.svelte';
   
   let { onEnter } = $props();
   let isLoading = $state(true);
@@ -31,7 +31,7 @@
     
     <div class="absolute inset-0">
       <Canvas>
-        <SollyModel bind:isLoading />
+        <Scene bind:isLoading />
       </Canvas>
     </div>
   </div>

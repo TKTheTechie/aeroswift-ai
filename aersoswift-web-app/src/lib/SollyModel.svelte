@@ -4,6 +4,7 @@
   
   const modelUrl = '/australian-solly.glb';
   const airplaneUrl = '/airplane.glb';
+  const kangarooUrl = '/kangaroo.glb';
   
   let { isLoading = $bindable(true) } = $props();
   
@@ -13,9 +14,10 @@
   
   let sollyLoaded = $state(false);
   let airplaneLoaded = $state(false);
+  let kangarooLoaded = $state(false);
   
   $effect(() => {
-    if (sollyLoaded && airplaneLoaded) {
+    if (sollyLoaded && airplaneLoaded && kangarooLoaded) {
       isLoading = false;
     }
   });
@@ -95,6 +97,20 @@
 <T.Group position={[0, -2, 0]} scale={4.0}>
   <GLTF url={modelUrl} onload={() => sollyLoaded = true} />
 </T.Group>
+
+<!-- Kangaroo Model - To the left of Solly -->
+{#key 'kangaroo-left'}
+  <T.Group position={[-3, -2, 0]} scale={2.0} rotation={[0, Math.PI, 0]}>
+    <GLTF url={kangarooUrl} onload={() => kangarooLoaded = true} />
+  </T.Group>
+{/key}
+
+<!-- Kangaroo Model - To the right of Solly -->
+{#key 'kangaroo-right'}
+  <T.Group position={[3, -2, 0]} scale={2.0} rotation={[0, Math.PI, 0]}>
+    <GLTF url={kangarooUrl} />
+  </T.Group>
+{/key}
 
 <!-- Smoke Trail Particles -->
 {#each smokeTrail as particle (particle.id)}
