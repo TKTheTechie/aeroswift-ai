@@ -5,9 +5,20 @@
   const modelUrl = '/australian-solly.glb';
   const airplaneUrl = '/airplane.glb';
   
+  let { isLoading = $bindable(true) } = $props();
+  
   let orbitAngle = $state(0);
   let smokeTrail = $state([]);
   let frameCounter = 0;
+  
+  let sollyLoaded = $state(false);
+  let airplaneLoaded = $state(false);
+  
+  $effect(() => {
+    if (sollyLoaded && airplaneLoaded) {
+      isLoading = false;
+    }
+  });
   
   useTask((delta) => {
     // Rotate the airplane around the character (360 degrees)
@@ -82,7 +93,7 @@
 
 <!-- Character Model -->
 <T.Group position={[0, -2, 0]} scale={4.0}>
-  <GLTF url={modelUrl} />
+  <GLTF url={modelUrl} onload={() => sollyLoaded = true} />
 </T.Group>
 
 <!-- Smoke Trail Particles -->
@@ -109,5 +120,5 @@
   rotation={[0, -orbitAngle, 0]}
   scale={0.5}
 >
-  <GLTF url={airplaneUrl} />
+  <GLTF url={airplaneUrl} onload={() => airplaneLoaded = true} />
 </T.Group>
