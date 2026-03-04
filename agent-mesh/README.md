@@ -19,33 +19,45 @@ An event-triggered agentic AI deployment providing a personalized experience to 
 
 ## Prerequisites
 
-- Python with pip (v12.9 recommended)
+- Python with pip (v3.12.9 recommended)
 - Access to a Solace PubSub broker (or use demo mode)
 
 ## Installation
 
-1. Install Solace Agent Mesh:
+1. Create a Python virtual environment
+```bash
+python -m venv .venv
+```
+
+2. Activate the environment
+```bash
+source .venv/bin/activate
+
+.venv/Scripts/activate  # Windows users
+```
+
+3. Install Solace Agent Mesh:
 ```bash
 pip install solace-agent-mesh
 ```
 
-2. Initialise Solace Agent Mesh:
+4. Initialise Solace Agent Mesh:
 ```bash
 sam init --skip
 ```
 
-3. Run the setup script:
+5. Run the setup script:
 ```bash
 ./setup.sh
 ```
 
-4. Update configs/agents/main_orchestrator.yaml, Line X
+6. Update configs/agents/main_orchestrator.yaml at the bottom
 ```bash
 allow_list: ["AeroswiftOperations"]
 deny_list: ["*"]
 ```
 
-5. Copy `.env_sample` as `.env` and update your environment variables:
+7. Copy `.env_sample` as `.env` and update your environment variables:
 ```env
 # LLM Configuration
 LLM_SERVICE_ENDPOINT=""
