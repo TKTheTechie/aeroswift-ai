@@ -86,6 +86,24 @@ Modern Svelte 5 web application that displays:
 
 [View Web App Documentation →](./aersoswift-web-app/README.md)
 
+### 2. Agent Mesh
+
+Solace Agent Mesh deployment with four agents:
+- Frequent Flyer Agent with access to frequent flyer database
+- FDPS Agent with access to real-time flight information
+- Airport Map Agent with access to airport maps & lounge information
+- Orchestrator Agent to coordinate task processing
+
+**Location**: `agent-mesh/`
+
+**Key Features**:
+- Real-time flight information
+- Intelligent agent orchestration
+- Flight rebooking recommendations
+- Airport map and real-time directions to lounges
+
+[View Agent Mesh Documentation →](./agent-mesh/README.md)
+
 ## Quick Start
 
 ### Prerequisites

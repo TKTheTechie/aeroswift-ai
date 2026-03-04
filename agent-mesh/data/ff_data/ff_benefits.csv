@@ -1,0 +1,35 @@
+﻿tier,perkId,perk
+bronze,PCI,priority check-in
+bronze,PB,priority boarding
+bronze,CCB,complimentary checked bag
+silver,PCI,priority check-in
+silver,PB,priority boarding
+silver,CCB2,2 complimentary checked bags
+silver,PAS,priority airport standby
+gold,PCI,priority check-in
+gold,PB,priority boarding
+gold,CCB2,2 complimentary checked bags
+gold,PAS,priority airport standby
+gold,PSC,priority security clearance
+gold,CPS,complimentary preferred seats
+gold,CAL,complimentary access to airline lounges
+platinum,PCI,priority check-in
+platinum,PB,priority boarding
+platinum,CCB3,3 complimentary checked bags
+platinum,PAS,priority airport standby
+platinum,PSC,priority security clearance
+platinum,CPS,complimentary preferred seats
+platinum,CSS,complimentary standard seats
+platinum,CSEH,complimentary sporting equipment handling
+platinum,CAA,complimentary access to all air partner lounges
+platinum,PSU,priority seat upgrade
+platinum+,PCI,priority check-in
+platinum+,PB,priority boarding
+platinum+,CCB3,3 complimentary checked bags
+platinum+,PAS,priority airport standby
+platinum+,PSC,priority security clearance
+platinum+,CPS,complimentary preferred seats
+platinum+,CSS,complimentary standard seats
+platinum+,CSEH,complimentary sporting equipment handling
+platinum+,CAA,complimentary access to all air partner lounges
+platinum+,PSU,priority seat upgrade
