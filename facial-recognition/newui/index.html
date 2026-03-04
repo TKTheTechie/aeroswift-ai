@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Flyer Enrol & Search</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 780px;
+      margin: 30px auto;
+      padding: 0 20px;
+      background: #f8f9fa;
+    }
+    h1 { text-align: center; color: #2c3e50; }
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid #ddd;
+      margin-bottom: 1.5rem;
+    }
+    .tab {
+      flex: 1;
+      padding: 14px;
+      text-align: center;
+      background: #eee;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .tab.active {
+      background: white;
+      border-bottom: 3px solid #0066cc;
+      font-weight: 600;
+    }
+    .tab:hover:not(.active) { background: #e0e0e0; }
+
+    .panel {
+      display: none;
+      background: white;
+      padding: 24px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+    .panel.active { display: block; }
+
+    .form-group {
+      margin-bottom: 1.4rem;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+    input[type="text"], input[type="file"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 12px 24px;
+      background: #0066cc;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1.05rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #0055aa; }
+    button:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
+    #result, #error {
+      margin-top: 1.5rem;
+      padding: 12px 16px;
+      border-radius: 6px;
+    }
+    #result { background: #e8f4fd; border: 1px solid #b3d4fc; }
+    #error  { background: #ffebee; border: 1px solid #ffcdd2; color: #c62828; }
+
+    pre { 
+      background: #f4f4f4; 
+      padding: 12px; 
+      border-radius: 6px; 
+      overflow-x: auto; 
+      max-height: 340px;
+    }
+    .preview {
+      max-width: 280px;
+      max-height: 280px;
+      margin: 12px 0;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Flyer Enrol & Search</h1>
+
+<div class="tabs">
+  <div class="tab active" data-tab="enrol">Enrol</div>
+  <div class="tab" data-tab="search">Search</div>
+</div>
+
+<!-- ────────────────────────────────────── -->
+<!--               ENROL PANEL                -->
+<!-- ────────────────────────────────────── -->
+<div id="enrol" class="panel active">
+  <form id="enrolForm">
+    <div class="form-group">
+      <label for="flyerId">Flyer ID</label>
+      <input type="text" id="flyerId" placeholder="e.g. flyer_2026_042" required />
+    </div>
+
+    <div class="form-group">
+      <label for="enrolImage">Image (jpg/png)</label>
+      <input type="file" id="enrolImage" accept="image/jpeg,image/png" required />
+      <div><img id="enrolPreview" class="preview" style="display:none;" alt="preview"/></div>
+    </div>
+
+    <button type="submit" id="enrolBtn">Enrol Flyer</button>
+  </form>
+
+  <div id="enrolResult"></div>
+  <div id="enrolError"></div>
+</div>
+
+<!-- ────────────────────────────────────── -->
+<!--               SEARCH PANEL               -->
+<!-- ────────────────────────────────────── -->
+<div id="search" class="panel">
+  <form id="searchForm">
+    <div class="form-group">
+      <label for="searchImage">Image to search with</label>
+      <input type="file" id="searchImage" accept="image/jpeg,image/png" required />
+      <div><img id="searchPreview" class="preview" style="display:none;" alt="preview"/></div>
+    </div>
+
+    <button type="submit" id="searchBtn">Search / Match</button>
+  </form>
+
+  <div id="searchResult"></div>
+  <div id="searchError"></div>
+</div>
+
+<script>
+// ────────────────────────────────────────────────
+//  Tab switching
+// ────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.tab).classList.add('active');
+  });
+});
+
+// ────────────────────────────────────────────────
+//  Image preview helper
+// ────────────────────────────────────────────────
+function showPreview(fileInput, previewImg) {
+  const file = fileInput.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    previewImg.src = e.target.result;
+    previewImg.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+document.getElementById('enrolImage').addEventListener('change', e => {
+  showPreview(e.target, document.getElementById('enrolPreview'));
+});
+
+document.getElementById('searchImage').addEventListener('change', e => {
+  showPreview(e.target, document.getElementById('searchPreview'));
+});
+
+// ────────────────────────────────────────────────
+//  Common POST helper
+// ────────────────────────────────────────────────
+async function postJSON(url, data) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+
+  if (!res.ok) {
+    let errText = await res.text().catch(() => '');
+    throw new Error(`${res.status} ${res.statusText}\n${errText}`);
+  }
+
+  return res.json().catch(() => res.text());
+}
+
+// ────────────────────────────────────────────────
+//  ENROL
+// ────────────────────────────────────────────────
+document.getElementById('enrolForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const flyerId = document.getElementById('flyerId').value.trim();
+  const fileInput = document.getElementById('enrolImage');
+  const btn = document.getElementById('enrolBtn');
+
+  if (!flyerId || !fileInput.files[0]) return;
+
+  btn.disabled = true;
+  clearMessages('enrol');
+
+  try {
+    const base64 = await fileToBase64(fileInput.files[0]);
+    const response = await postJSON('http://localhost:3001/enroll', {
+      flyerId,
+      imageBase64: base64.split(',')[1]   // remove data:image/...;base64,
+    });
+
+    showResult('enrol', response);
+  } catch (err) {
+    showError('enrol', err.message);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// ────────────────────────────────────────────────
+//  SEARCH / MATCH
+// ────────────────────────────────────────────────
+document.getElementById('searchForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const fileInput = document.getElementById('searchImage');
+  const btn = document.getElementById('searchBtn');
+
+  if (!fileInput.files[0]) return;
+
+  btn.disabled = true;
+  clearMessages('search');
+
+  try {
+    const base64 = await fileToBase64(fileInput.files[0]);
+    const response = await postJSON('http://localhost:3002/match', {
+      imageBase64: base64.split(',')[1]
+    });
+
+    showResult('search', response);
+  } catch (err) {
+    showError('search', err.message);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// ────────────────────────────────────────────────
+//  Helpers
+// ────────────────────────────────────────────────
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function showResult(prefix, data) {
+  const el = document.getElementById(prefix + 'Result');
+  el.innerHTML = `<strong>Response:</strong><pre>${JSON.stringify(data, null, 2)}</pre>`;
+  el.style.display = 'block';
+}
+
+function showError(prefix, msg) {
+  const el = document.getElementById(prefix + 'Error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function clearMessages(prefix) {
+  document.getElementById(prefix + 'Result').style.display = 'none';
+  document.getElementById(prefix + 'Error').style.display = 'none';
+}
+</script>
+</body>
+</html>
