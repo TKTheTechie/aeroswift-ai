@@ -20,7 +20,8 @@ An event-triggered agentic AI deployment providing a personalized experience to 
 ## Prerequisites
 
 - Python with pip (v3.12.9 recommended)
-- Access to a Solace PubSub broker (or use demo mode)
+- Access to a Solace PubSub broker
+- npm
 
 ## Installation
 
@@ -46,15 +47,17 @@ pip install solace-agent-mesh
 sam init --skip
 ```
 
-5. Run the setup script:
+5. Add the Solace Agent Mesh SQL Database plugin, RAG plugin and Event Mesh Gateway plugin:
 ```bash
-./setup.sh
+sam plugin add flight-status-db --plugin sam-sql-database
+sam plugin add em-gateway --plugin sam-event-mesh-gateway
 ```
 
-6. Update configs/agents/main_orchestrator.yaml at the bottom
+6. Run the setup script:
 ```bash
-allow_list: ["AeroswiftOperations"]
-deny_list: ["*"]
+./setup.sh
+
+./setup.bat  # Windows users
 ```
 
 7. Copy `.env_sample` as `.env` and update your environment variables:
@@ -74,6 +77,11 @@ EVENT_MESH_GW_SOLACE_BROKER_URL=""
 EVENT_MESH_GW_SOLACE_BROKER_VPN=""
 EVENT_MESH_GW_SOLACE_BROKER_USERNAME=""
 EVENT_MESH_GW_SOLACE_BROKER_PASSWORD=""
+```
+
+8. Install the MCP Filesystem Server
+```bash
+npm i @modelcontextprotocol/server-filesystem
 ```
 
 ## Usage
@@ -146,3 +154,4 @@ MIT
 ## Related Projects
 
 - [Solace Agent Mesh](https://github.com/SolaceLabs/solace-agent-mesh) - Open-source framework for building event-driven agentic AI
+- [MCP Filesystem](https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem) - MCP server for looking in a local directory

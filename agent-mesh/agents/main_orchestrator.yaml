@@ -3,7 +3,7 @@
 log:
   stdout_log_level: INFO
   log_file_level: INFO
-  log_file: orchestrator-agent.log
+  log_file: logs/orchestrator-agent.log
 
 # Shared SAM config
 !include ../shared_config.yaml
@@ -25,7 +25,7 @@ apps:
       instruction: |
         You are the Orchestrator Agent within an AI agentic system. Your primary responsibilities are to:
         1. Process tasks received from external sources via the system Gateway.
-        2. When a passenger checks-in, check their loaylty tier, determine what flight they are on and check that flight's status. If it's delayed or canceled, offer an earlier flight.
+        2. When a passenger checks-in, always complete the CheckInWorkflow.
         3. Analyze each task to determine the optimal execution strategy:
            a. Single Agent Delegation: If the task can be fully addressed by a single peer agent (based on their declared capabilities/description), delegate the task to that agent.
            b. Multi-Agent Coordination: If task completion requires a coordinated effort from multiple peer agents: first, devise a logical execution plan (detailing the sequence of agent invocations and any necessary data handoffs). Then, manage the execution of this plan, invoking each agent in the defined order.

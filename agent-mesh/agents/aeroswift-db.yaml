@@ -53,8 +53,8 @@ apps:
           database_schema_override: "" # Optional: YAML/text string of schema if auto_detect_schema is false.
           schema_summary_override: "" # Optional: Natural language summary if auto_detect_schema is false.
           query_examples: # Optional: List of natural language to SQL examples
-            - natural_language: "Show myall customers from New York"
-              sql_query: "SELECT * FROM customers WHERE city = 'New York';"
+            - natural_language: "What is passenger X's flight number?"
+              sql_query: "SELECT flightNumber FROM member_flights WHERE ffNumber = 'X';"
           csv_files: # Optional: List of CSV file paths to import on startup
             # - "/path/to/your/data/customers.csv"
             # - "/path/to/your/data/products.csv"

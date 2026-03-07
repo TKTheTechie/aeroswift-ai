@@ -53,10 +53,8 @@ apps:
           database_schema_override: "" # Optional: YAML/text string of schema if auto_detect_schema is false.
           schema_summary_override: "" # Optional: Natural language summary if auto_detect_schema is false.
           query_examples: # Optional: List of natural language to SQL examples
-            - natural_language: "Show all customers from New York"
-              sql_query: "SELECT * FROM customers WHERE city = 'New York';"
-            - natural_language: "What are the top 5 highest-selling products this month?"
-              sql_query: "SELECT product_name, SUM(quantity * price) AS total_sales FROM order_items JOIN products ON order_items.product_id = products.id WHERE order_date >= date('now', 'start of month') GROUP BY product_name ORDER BY total_sales DESC LIMIT 5;"
+            - natural_language: "What is the status for flight ABC?"
+              sql_query: "SELECT flightStatus FROM flight_data WHERE flightNumber = 'ABC';"
           csv_files: # Optional: List of CSV file paths to import on startup
             # - "/path/to/your/data/customers.csv"
             # - "/path/to/your/data/products.csv"
