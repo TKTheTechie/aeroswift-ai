@@ -27,7 +27,8 @@ class ESP32VideoStreamer {
     this.emotionDetector = null;
     this.lastDetectionTime = 0;
     this.detectionQueue = [];
-    
+    this.faceDetectionActive = true;
+
     this.config = {
       solace: {
         host: process.env.SOLACE_MQTT_HOST || 'tcp://localhost:1883',
@@ -53,6 +54,7 @@ class ESP32VideoStreamer {
         confidenceThreshold: parseFloat(process.env.DETECTION_CONFIDENCE_THRESHOLD) || 0.5,
         analyticsTopic: process.env.ANALYTICS_TOPIC || 'video/esp32/analytics',
         faceMatchTopic: process.env.FACE_MATCH_TOPIC || 'aeroswift/face/match',
+        scanResetTopic: process.env.TOPIC_FACE_SCAN_RESET || 'aeroswift/terminal1/v1/face/scan/reset',
         modelType: process.env.FACE_MODEL_TYPE || 'yolov8n-face',
         enableEmotions: process.env.ENABLE_EMOTION_DETECTION === 'true'
       }
@@ -148,7 +150,22 @@ class ESP32VideoStreamer {
 
       this.mqttClient.on('connect', () => {
         console.log('Connected to Solace MQTT broker');
+        const scanResetTopic = this.config.detection.scanResetTopic;
+        this.mqttClient.subscribe(scanResetTopic, { qos: 1 }, (err) => {
+          if (err) {
+            console.error(`Failed to subscribe to scan reset topic: ${scanResetTopic}`, err);
+          } else {
+            console.log(`Subscribed to scan reset topic: ${scanResetTopic}`);
+          }
+        });
         resolve();
+      });
+
+      this.mqttClient.on('message', (topic, _message) => {
+        if (topic === this.config.detection.scanResetTopic) {
+          console.log('Scan reset command received — face detection re-enabled');
+          this.faceDetectionActive = true;
+        }
       });
 
       this.mqttClient.on('error', (error) => {
@@ -315,8 +332,9 @@ class ESP32VideoStreamer {
               this.publishVideoFrame(frame);
               this.lastFrameTime = now;
               
-              // Queue frame for face detection if enabled
-              if (this.config.detection.enabled && 
+              // Queue frame for face detection if enabled and a new scan is active
+              if (this.config.detection.enabled &&
+                  this.faceDetectionActive &&
                   now - this.lastDetectionTime >= this.config.detection.intervalMs) {
                 this.queueFrameForDetection(frame);
                 this.lastDetectionTime = now;
@@ -488,6 +506,8 @@ class ESP32VideoStreamer {
           source: "camera-streaming-server",
           timestamp: new Date().toISOString()
         });
+        this.faceDetectionActive = false;
+        console.log(`Face detected — suspending detection until a reset is received on ${this.config.detection.scanResetTopic}`);
         this.mqttClient.publish(
           this.config.detection.faceMatchTopic,
           matchPayload,

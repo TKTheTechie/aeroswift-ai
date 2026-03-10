@@ -4,16 +4,7 @@
   import SplashScreen from './lib/SplashScreen.svelte';
   
   let showSplash = $state(true);
-  
-  let passengerData = $state({
-    name: 'Thomas Kunnumpurath',
-    loyaltyStatus: 'Platinum Elite',
-    flightNumber: 'AS 1234',
-    seat: '12A',
-    destination: 'San Francisco',
-    boardingGroup: '1'
-  });
-  
+
   function handleEnter() {
     showSplash = false;
   }
@@ -44,7 +35,7 @@
     <!-- Main Content -->
     <main class="flex-1 container mx-auto px-4 py-6 flex flex-col gap-6">
       <CameraFeed />
-      <PassengerInfo data={passengerData} />
+      <PassengerInfo />
     </main>
   </div>
 {/if}
