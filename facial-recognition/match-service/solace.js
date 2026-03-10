@@ -1,16 +1,19 @@
 
+import 'dotenv/config';
 import solace from "solclientjs";
 
 solace.SolclientFactory.init({
   profile: solace.SolclientFactoryProfiles.version10
 });
 
+let _session = null;
+
 export function connectSolace(onMessage) {
   const session = solace.SolclientFactory.createSession({
-    url: "ws://ec2-54-85-138-239.compute-1.amazonaws.com:8008",
-    vpnName: "nats-connector",
-    userName: "default",
-    password: "nats",
+    url: process.env.SOLACE_URL,
+    vpnName: process.env.SOLACE_VPN,
+    userName: process.env.SOLACE_USERNAME,
+    password: process.env.SOLACE_PASSWORD,
 
     // --- Reliability ---
     connectRetries: 3,
@@ -24,6 +27,8 @@ export function connectSolace(onMessage) {
     // --- Logging ---
     logLevel: solace.LogLevel.WARN
   });
+
+  _session = session;
 
   session.on(solace.SessionEventCode.UP_NOTICE, () => {
     console.log("✅ Connected to Solace");
@@ -41,9 +46,21 @@ export function connectSolace(onMessage) {
   session.connect();
 }
 
+export function publishToTopic(topic, payload) {
+  if (!_session) {
+    console.error('[Solace] Cannot publish — no active session');
+    return;
+  }
+  const message = solace.SolclientFactory.createMessage();
+  message.setBinaryAttachment(JSON.stringify(payload));
+  message.setDestination(solace.SolclientFactory.createTopicDestination(topic));
+  message.setDeliveryMode(solace.MessageDeliveryModeType.DIRECT);
+  _session.send(message);
+}
+
 
 function subscribeToQueue(session, onMessage) {
-  const queueName = "FACE.MATCH.QUEUE";
+  const queueName = process.env.FACE_MATCH_QUEUE || 'FACE.MATCH.QUEUE';
   console.log(`[Solace] 🔄 Attempting to bind consumer to queue: ${queueName}`);
 
   const messageConsumer = session.createMessageConsumer({
@@ -52,8 +69,8 @@ function subscribeToQueue(session, onMessage) {
       type: solace.QueueType.QUEUE
     },
     acknowledgeMode: solace.MessageConsumerAcknowledgeMode.CLIENT,
-    activeIndicationEnabled: true,      // shows ACTIVE/INACTIVE in UI
-    createIfMissing: true,              // auto-create (if user has permission)
+    activeIndicationEnabled: true,
+    createIfMissing: true,
     queueProperties: {
       accessType: solace.QueueAccessType.NON_EXCLUSIVE,
       maxMsgSpoolUsage: 5000,
@@ -61,7 +78,6 @@ function subscribeToQueue(session, onMessage) {
     }
   });
 
-  // === DEBUG: Log EVERY possible event ===
   const events = [
     solace.MessageConsumerEventName.UP,
     solace.MessageConsumerEventName.DOWN,
@@ -80,7 +96,6 @@ function subscribeToQueue(session, onMessage) {
     });
   });
 
-  // Message handler (async-safe)
   messageConsumer.on(solace.MessageConsumerEventName.MESSAGE, async (msg) => {
     const msgId = msg.getCorrelationId() || msg.getSenderId() || "no-id";
     console.log(`[Solace] 📨 Received ${msgId}`);
@@ -95,7 +110,7 @@ function subscribeToQueue(session, onMessage) {
 
   console.log("[Solace] Connecting consumer (this will bind to queue)...");
   try {
-    messageConsumer.connect();   // ←←← THIS WAS THE MISSING PIECE
+    messageConsumer.connect();
   } catch (err) {
     console.error("[Solace] Failed to call connect()", err);
   }

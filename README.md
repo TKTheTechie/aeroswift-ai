@@ -5,7 +5,7 @@
   <img src="logo.jpg" alt="AeroSwift AI" width="200"/>
 </p>
 
-A complete real-time airport passenger recognition and boarding assistance system consisting of a camera streaming server with AI-powered people detection and a modern web application for displaying live feeds and passenger information.
+A complete real-time airport passenger recognition and boarding assistance system consisting of a camera streaming server with AI-powered people detection, a modern web application for displaying live feeds and passenger information, an event-driven AI agent mesh for passenger assistance, and a facial recognition service for automated passenger identification.
 
 ## System Overview
 
@@ -13,6 +13,8 @@ This project provides an end-to-end solution for airport boarding operations:
 
 1. **Camera Streaming Server**: Captures video from ESP32 cameras, performs real-time people detection using YOLOv8, and publishes frames and analytics via Solace PubSub
 2. **Web Application**: Displays live camera feeds and passenger information in a modern, responsive interface
+3. **Agent Mesh**: Event-driven AI agents that provide personalized passenger assistance including flight rebooking, directions, and concierge services
+4. **Facial Recognition**: Enrolls and matches passenger faces using vector similarity search against a Qdrant database
 
 ## Architecture
 
@@ -23,31 +25,33 @@ This project provides an end-to-end solution for airport boarding operations:
 └────────┬────────┘
          │ HTTP Stream
          ▼
-┌─────────────────────────────┐
-│  Camera Streaming Server    │
-│  - Frame Processing         │
-│  - YOLOv8 People Detection  │
-│  - MQTT Publishing          │
+┌─────────────────────────────┐     ┌──────────────────────────────┐
+│  Camera Streaming Server    │     │   Facial Recognition         │
+│  - Frame Processing         │     │  - Enroll Service (port 3001)│
+│  - YOLOv8 People Detection  │     │  - Match Service (port 3002) │
+│  - Face & Emotion Detection │     │  - face-api.js embeddings    │
+│  - MQTT Publishing          │     └──────────────┬───────────────┘
+└────────┬────────────────────┘                    │ Cosine Search
+         │ Solace PubSub (MQTT)                    ▼
+         ▼                             ┌───────────────────────┐
+┌─────────────────────────────┐        │   Qdrant Vector DB    │
+│   Solace PubSub Broker      │        │   (Docker, port 6333) │
+│   (Message Router)          │        └───────────────────────┘
 └────────┬────────────────────┘
-         │ Solace PubSub (MQTT)
+         │ WebSocket / Event Triggers
          ▼
-┌─────────────────────────────┐
-│   Solace PubSub Broker      │
-│   (Message Router)          │
-└────────┬────────────────────┘
-         │ WebSocket
-         ▼
-┌─────────────────────────────┐
-│   AeroSwift Web App         │
-│   - Live Camera Feed        │
-│   - Passenger Info          │
-│   - People Analytics        │
-└─────────────────────────────┘
+┌─────────────────────────────┐     ┌──────────────────────────────┐
+│   AeroSwift Web App         │     │   Agent Mesh (SAM)           │
+│   - Live Camera Feed        │     │  - Orchestrator Agent        │
+│   - Passenger Info          │     │  - AeroswiftOperations Agent │
+│   - People Analytics        │     │  - AeroswiftDB Agent         │
+└─────────────────────────────┘     │  - FDPS Agent                │
+                                    └──────────────────────────────┘
 ```
 
 ## Projects
 
-### 1. Camera Streaming Server
+### 1. Camera Streaming Server (camera-streaming-server)
 
 Node.js server that connects to ESP32 cameras and provides:
 - Real-time video frame processing and streaming
@@ -67,7 +71,7 @@ Node.js server that connects to ESP32 cameras and provides:
 
 [View Camera Server Documentation →](./camera-streaming-server/README.md)
 
-### 2. AeroSwift Web Application
+### 2. AeroSwift Web Application (aersoswift-web-app)
 
 Modern Svelte 5 web application that displays:
 - Live camera feeds from multiple gates
@@ -86,30 +90,53 @@ Modern Svelte 5 web application that displays:
 
 [View Web App Documentation →](./aersoswift-web-app/README.md)
 
-### 2. Agent Mesh
+### 3. Agent Mesh (agent-mesh)
 
-Solace Agent Mesh deployment with four agents:
-- Frequent Flyer Agent with access to frequent flyer database
-- FDPS Agent with access to real-time flight information
-- Airport Map Agent with access to airport maps & lounge information
-- Orchestrator Agent to coordinate task processing
+Event-driven agentic AI deployment providing personalized assistance to frequent flyers, triggered by business events such as passenger check-in. Built on [Solace Agent Mesh](https://github.com/SolaceLabs/solace-agent-mesh).
 
 **Location**: `agent-mesh/`
 
+**Agents**:
+- **Orchestrator Agent**: Discovers peer agents, decomposes prompts, delegates tasks, and aggregates responses
+- **AeroswiftOperations Agent**: Primary coordinator for frequent flyer workflows; delegates to AeroswiftDB and FDPS agents
+- **AeroswiftDB Agent**: SQL agent that queries the frequent flyer SQLite database (tiers, benefits, member profiles, statuses)
+- **FDPS Agent**: Accesses real-time flight information (source/destination, arrival, status)
+
 **Key Features**:
-- Real-time flight information
-- Intelligent agent orchestration
-- Flight rebooking recommendations
-- Airport map and real-time directions to lounges
+- Flight rebooking recommendations for delayed or canceled flights
+- Directions to airport lounges and points of interest
+- Tier-based airport concierge service activation
+- Business process automation triggered by Solace events
+- Dev mode via `SOLACE_DEV_MODE=true` (no broker required)
 
 [View Agent Mesh Documentation →](./agent-mesh/README.md)
+
+### 4. Facial Recognition (facial-recognition)
+
+Standalone face enrollment and matching demo using vector similarity search. Passengers are enrolled by storing face embeddings in Qdrant; live face images are matched against the database using cosine similarity.
+
+**Location**: `facial-recognition/`
+
+**Services**:
+- **Enroll Service** (port 3001): Accepts a base64 image + flyerId, extracts a 128-d face embedding via face-api.js, and upserts it into Qdrant
+- **Match Service** (port 3002): Accepts a base64 image, extracts an embedding, runs top-K cosine search in Qdrant, and returns a match decision with confidence score
+
+**Key Features**:
+- L2-normalized face embeddings via `@vladmandic/face-api` (SSD MobileNetV1)
+- Cosine similarity matching in Qdrant vector database
+- Confidence + gap-based match decision (recommended thresholds: confidence ≥ 0.90, gap ≥ 0.05)
+- REST API for easy integration
+- Docker-based Qdrant deployment
+
+[View Facial Recognition Documentation →](./facial-recognition/README.md)
 
 ## Quick Start
 
 ### Prerequisites
 
-- Node.js v16 or higher
-- Python 3.8+ (for YOLOv8 model export)
+- Node.js v18 or higher
+- Python 3.12+ (for Agent Mesh)
+- Docker (for Qdrant vector database)
 - ESP32 camera module (or use demo mode)
 - Solace PubSub broker (cloud or local)
 
@@ -151,7 +178,65 @@ cp .env.example .env
 npm run dev
 ```
 
-### 3. Access the Application
+### 3. Setup Agent Mesh (Optional)
+
+```bash
+cd agent-mesh
+python -m venv .venv && source .venv/bin/activate
+pip install solace-agent-mesh
+sam init --skip
+./setup.sh
+
+# Configure environment
+cp .env_sample .env
+# Edit .env with your LLM endpoint and Solace credentials
+
+# Run in development (foreground)
+sam run
+
+# Or run in background
+nohup sam run &
+```
+
+The Agent Mesh UI is available at `http://localhost:8000`.
+
+### 4. Setup Facial Recognition (Optional)
+
+```bash
+cd facial-recognition
+
+# Start Qdrant vector database
+docker run -d --name qdrant -p 6333:6333 qdrant/qdrant
+
+# Download face-api models
+./download-models.sh
+
+# Install and start enroll service
+cd enroll-service && npm install
+node index.js   # Runs on port 3001
+
+# In a new terminal, install and start match service
+cd ../match-service && npm install
+node index.js   # Runs on port 3002
+```
+
+Enroll a passenger face:
+```bash
+IMAGE_B64=$(base64 person.jpg | tr -d '\n')
+curl -X POST http://localhost:3001/enroll \
+  -H "Content-Type: application/json" \
+  -d '{"flyerId": "F0001", "imageBase64": "'"$IMAGE_B64"'"}'
+```
+
+Match a face:
+```bash
+IMAGE_B64=$(base64 person_test.jpg | tr -d '\n')
+curl -X POST http://localhost:3002/match \
+  -H "Content-Type: application/json" \
+  -d '{"imageBase64": "'"$IMAGE_B64"'"}'
+```
+
+### 5. Access the Application
 
 Open your browser to `http://localhost:5173` to view the web application.
 
@@ -189,6 +274,20 @@ VITE_SOLACE_URL=ws://localhost:8008
 VITE_SOLACE_VPN=default
 VITE_VIDEO_TOPIC=aeroswift/camera/feed
 VITE_DEMO_MODE=false
+```
+
+**Agent Mesh** (`.env`):
+```env
+LLM_SERVICE_ENDPOINT=""
+LLM_SERVICE_API_KEY=""
+LLM_SERVICE_GENERAL_MODEL_NAME=""
+SOLACE_BROKER_URL=""
+SOLACE_BROKER_VPN=""
+SOLACE_BROKER_USERNAME=""
+SOLACE_BROKER_PASSWORD=""
+SOLACE_DEV_MODE=false   # Set to true to run without a Solace broker
+AEROSWIFT_DB_TYPE=sqlite
+AEROSWIFT_DB_NAME=data/aeroswift.db
 ```
 
 ## Topics and Message Flow
@@ -375,6 +474,8 @@ MIT
 For issues and questions:
 - Camera Server: See [camera-streaming-server/README.md](./camera-streaming-server/README.md)
 - Web App: See [aersoswift-web-app/README.md](./aersoswift-web-app/README.md)
+- Agent Mesh: See [agent-mesh/README.md](./agent-mesh/README.md)
+- Facial Recognition: See [facial-recognition/README.md](./facial-recognition/README.md)
 
 ## Contributing
 
@@ -387,6 +488,9 @@ Contributions are welcome! Please:
 ## Acknowledgments
 
 - **Solace PubSub** for real-time messaging infrastructure
+- **Solace Agent Mesh** for the event-driven agentic AI framework
 - **YOLOv8** (Ultralytics) for state-of-the-art object detection
+- **@vladmandic/face-api** for face detection and recognition
+- **Qdrant** for high-performance vector similarity search
 - **Svelte** for reactive UI framework
 - **ESP32** community for camera module support

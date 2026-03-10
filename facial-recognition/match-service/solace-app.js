@@ -1,12 +1,22 @@
-// match-service/index.js
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+import { config } from 'dotenv';
+import { expand } from 'dotenv-expand';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+expand(config({
+  path: [resolve(__dirname, '../../common-properties/.env'), resolve(__dirname, '.env')]
+}));
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { loadModels, getFaceEmbedding } from './face.js';
-import { connectSolace } from './solace.js';
+import { connectSolace, publishToTopic } from './solace.js';
 
-const COLLECTION = 'flyers';
-const MATCH_THRESHOLD = 0.90;
+const COLLECTION = process.env.QDRANT_COLLECTION || 'flyers';
+const MATCH_THRESHOLD = parseFloat(process.env.MATCH_THRESHOLD) || 0.90;
+const RESULT_TOPIC = process.env.FACE_MATCH_RESULT_TOPIC || 'aeroswift/face/match/result';
 
-const qdrant = new QdrantClient({ url: 'http://localhost:6333' });
+const qdrant = new QdrantClient({ url: process.env.QDRANT_URL || 'http://localhost:6333' });
 
 (async function bootstrap() {
   try {
@@ -42,30 +52,33 @@ async function onMessage(msg) {
       with_payload: true
     });
 
+    const result = {
+      timestamp: new Date().toISOString(),
+      matched: false,
+      flyerId: null,
+      confidence: 0,
+      messageId
+    };
+
     if (results.length > 0) {
       const best = results[0];
+      result.confidence = Number(best.score.toFixed(4));
 
       if (best.score >= MATCH_THRESHOLD) {
-        console.log({
-          MATCH: true,
-          flyerId: best.payload?.flyerId,
-          confidence: Number(best.score.toFixed(4)),
-          messageId
-        });
+        result.matched = true;
+        result.flyerId = best.payload?.flyerId;
+        console.log(`✅ MATCH: flyerId=${result.flyerId}, confidence=${result.confidence}`);
       } else {
-        console.log({
-          MATCH: false,
-          confidence: Number(best.score.toFixed(4)),
-          messageId
-        });
+        console.log(`❌ NO MATCH: confidence=${result.confidence}`);
       }
     } else {
-      console.log({ MATCH: false, confidence: 0, messageId });
+      console.log('❌ NO MATCH: no results from Qdrant');
     }
+
+    publishToTopic(RESULT_TOPIC, result);
 
   } catch (err) {
     console.error('❌ Error processing message:', err.message, { messageId });
     throw err; // no ACK → redelivery
   }
 }
-

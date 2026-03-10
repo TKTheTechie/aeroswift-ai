@@ -3,10 +3,13 @@ import * as faceapi from '@vladmandic/face-api';
 import * as tf from '@tensorflow/tfjs-node';
 import { Canvas, Image, ImageData } from 'canvas';
 import sharp from 'sharp';
+import { fileURLToPath } from 'url';
+import path from 'path';
 
 faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
 
-const MODEL_PATH = './models/face-api';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const MODEL_PATH = path.join(__dirname, '..', 'models', 'face-api');
 
 export async function loadModels() {
   console.log('🔄 Loading face-api models...');

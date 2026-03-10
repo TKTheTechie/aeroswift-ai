@@ -7,3 +7,4 @@ requirements.txt
 logs/
 configs/
 src/
+node_modules/

@@ -149,7 +149,7 @@ curl -O https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/face_recognition
 
 ```bash
 cd docker
-docker compose up
+docker compose -f qdrant.yaml up -d
 or
 docker run -d   --name qdrant   -p 6333:6333   qdrant/qdrant
 ```

@@ -5,7 +5,11 @@ const WebSocket = require('ws');
 const YOLOv8Detector = require('./yolo-detector');
 const FaceDetector = require('./face-detector');
 const EmotionDetector = require('./emotion-detector');
-require('dotenv').config();
+const path = require('path');
+const { expand } = require('dotenv-expand');
+expand(require('dotenv').config({
+  path: [path.resolve(__dirname, '../common-properties/.env'), path.resolve(__dirname, '.env')]
+}));
 
 class ESP32VideoStreamer {
   constructor() {
@@ -48,6 +52,7 @@ class ESP32VideoStreamer {
         intervalMs: parseInt(process.env.DETECTION_INTERVAL_MS) || 2000,
         confidenceThreshold: parseFloat(process.env.DETECTION_CONFIDENCE_THRESHOLD) || 0.5,
         analyticsTopic: process.env.ANALYTICS_TOPIC || 'video/esp32/analytics',
+        faceMatchTopic: process.env.FACE_MATCH_TOPIC || 'aeroswift/face/match',
         modelType: process.env.FACE_MODEL_TYPE || 'yolov8n-face',
         enableEmotions: process.env.ENABLE_EMOTION_DETECTION === 'true'
       }
@@ -476,6 +481,23 @@ class ESP32VideoStreamer {
           }
           console.log(logMsg);
         });
+
+        const base64encoded = frameData.toString('base64');
+        const matchPayload = JSON.stringify({
+          imageBase64: base64encoded,
+          source: "camera-streaming-server",
+          timestamp: new Date().toISOString()
+        });
+        this.mqttClient.publish(
+          this.config.detection.faceMatchTopic,
+          matchPayload,
+          { qos: 1 },
+          (error) => {
+            if (error) {
+              console.error('Failed to publish face match payload:', error.message);
+            }
+          }
+        );
       }
     } catch (error) {
       console.error('Detection error:', error.message);
