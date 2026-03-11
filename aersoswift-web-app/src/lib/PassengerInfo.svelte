@@ -9,9 +9,7 @@
     PASSENGER_LOOKUP_RESPONSE_TOPIC
   } from './common/config';
 
-  type ScanState = 'idle' | 'matching' | 'looking_up' | 'found';
-
-  let scanState = $state<ScanState>('idle');
+  let scanState = $state('idle');
   let flyerId = $state('');
   let passengerDetails = $state('');
 
