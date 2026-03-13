@@ -332,9 +332,8 @@ class ESP32VideoStreamer {
               this.publishVideoFrame(frame);
               this.lastFrameTime = now;
               
-              // Queue frame for face detection if enabled and a new scan is active
+              // Queue frame for detection if enabled (analytics always run)
               if (this.config.detection.enabled &&
-                  this.faceDetectionActive &&
                   now - this.lastDetectionTime >= this.config.detection.intervalMs) {
                 this.queueFrameForDetection(frame);
                 this.lastDetectionTime = now;
@@ -501,7 +500,7 @@ class ESP32VideoStreamer {
         });
 
         const highConfidenceFace = detections.find(d => d.confidence > 0.5);
-        if (highConfidenceFace) {
+        if (highConfidenceFace && this.faceDetectionActive) {
           const base64encoded = frameData.toString('base64');
           const matchPayload = JSON.stringify({
             imageBase64: base64encoded,
@@ -509,7 +508,7 @@ class ESP32VideoStreamer {
             timestamp: new Date().toISOString()
           });
           this.faceDetectionActive = false;
-          console.log(`Face detected with ${(highConfidenceFace.confidence * 100).toFixed(1)}% confidence — publishing to ${this.config.detection.faceMatchTopic} and suspending detection`);
+          console.log(`Face detected with ${(highConfidenceFace.confidence * 100).toFixed(1)}% confidence — publishing to ${this.config.detection.faceMatchTopic} and suspending face match until reset`);
           this.mqttClient.publish(
             this.config.detection.faceMatchTopic,
             matchPayload,
