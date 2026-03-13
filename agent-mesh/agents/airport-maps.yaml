@@ -28,7 +28,24 @@ apps:
           1. Use the MCP tool to get the image from local storage
           2. Save that image to artifacts store as a .png
           3. Load the artifact and do image analysis
-          4. Always share the results with the requester
+          4. Edit the image to exaggerate points of interest (eg. clubs/lounges)
+      #     5. Create a JSON artifact with {"result": <result>, "image": "artifact=<artifact-name>", "handler": "happy"}
+
+      #     IMPORTANT: When invoked by a workflow, use the exact output filename specified in the workflow instructions.
+
+      # input_schema:
+      #   type: object
+      #   properties:
+      #     value: {type: string}
+      #   required: [value]
+
+      # output_schema:
+      #   type: object
+      #   properties:
+      #     result: {type: string}
+      #     image: {type: string}
+      #     handler: {type: string}
+      #   required: [result, handler]
 
       inject_system_purpose: true
       inject_response_format: true
@@ -55,17 +72,18 @@ apps:
               - -y
               - '@modelcontextprotocol/server-filesystem'
               - 'data/terminal_maps'
-          # connection_params:
-          #   type: stdio
-          #   command: "./node_modules/.bin/mcp-server-filesystem"
-          #   args:
-          #     - "data/terminal_maps"
         - tool_type: builtin
           tool_name: "describe_image"
           tool_config:
             model: "gemini-2.5-flash"       # Vision model
             api_key: "${LLM_SERVICE_API_KEY}"
             api_base: "${LLM_SERVICE_ENDPOINT}"
+        - tool_type: builtin
+          tool_name: "edit_image_with_gemini"
+          tool_config:
+            gemini_api_key: "${LLM_SERVICE_API_KEY}"
+            api_base: "${LLM_SERVICE_ENDPOINT}"
+            model: "gemini-2.5-flash-image"
 
       agent_card:
         description: "The Airport Maps component. It searches the local directoy for an airport map and provides airline lounge locations based off that map."
@@ -78,6 +96,9 @@ apps:
         - id: image_description
           name: Describe Images
           description: Analyzes airport map images
+        - id: image_edit
+          name: Edit Images
+          description: Edit airport maps to make certain points of interest more obvious
 
       agent_card_publishing: 
         interval_seconds: 10

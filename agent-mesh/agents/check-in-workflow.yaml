@@ -63,17 +63,18 @@ apps:
         output_schema:
           type: object
           properties:
-            result: {type: string}
-            handler: {type: string}
-            category: {type: string}
-          required: [result, handler, category]
+            passenger_info:  {type: string, description: "Passenger from loyalty lookup"}
+            flight_info:   {type: string, description: "Information on the passenger's flight"}
+            flight_status:   {type: string, description: "Current status of the passenger's flight"}
+            recommendation:  {type: string, description: "Lounge info or rebooking suggestion based on flight status"}
+          required: [passenger_info, flight_info, flight_status, recommendation]
 
-        nodes:
-          # Step 1: Get flight number and loyalty status
+        nodes:       
+          # Step 1: Get their flight number
           - id: get_flight
             type: agent
-            agent_name: "AeroswiftDB"
-            instruction: "Based on the frequent flyer number, determine what their flight number is"
+            agent_name: "FrequentFlyer"
+            instruction: "Based on the frequent flyer number, what is this member's flight?"
             input:
               value: "{{workflow.input.value}}"
 
@@ -84,21 +85,21 @@ apps:
             depends_on: [get_flight]
             instruction: "Get the flight status of the flight number"
             input:
-              value: "{{get_flight.output}}"
+              value: "{{get_flight.output.flight}}"
 
           # Step 3: Route based on flight status
           - id: route_by_status
             type: switch
             depends_on: [get_status]
             cases:
-              - condition: "'{{get_status.output}}' == 'active'"
+              - condition: "'{{get_status.output.status}}' == 'active'"
                 node: handle_happy
-              - condition: "'{{get_status.output}}' == 'on-time'"
+              - condition: "'{{get_status.output.status}}' == 'on-time'"
                 node: handle_happy
-              - condition: "'{{get_status.output}}' == 'delayed'"
-                node: handle_rebook
-              - condition: "'{{get_status.output}}' == 'canceled'"
-                node: handle_rebook
+              - condition: "'{{get_status.output.status}}' == 'delayed'"
+                node: handle_rebook_delay
+              - condition: "'{{get_status.output.status}}' == 'canceled'"
+                node: handle_rebook_cancel
 
           # Branch: Handle the happy path
           - id: handle_happy
@@ -107,27 +108,45 @@ apps:
             depends_on: [route_by_status]
             instruction: "Where are the lounges in this airport?"
             input:
-              value: "{{workflow.input.value}}"
+              value: "{{get_status.output.flight-info}}"
 
-          # Branch: Handle rebooking suggetion
-          - id: handle_rebook
+          # Branch: Handle rebooking suggestion
+          - id: handle_rebook_delay
             type: agent
             agent_name: "FlightInfo"
             depends_on: [route_by_status]
-            instruction: "Is there an alternative flight for this delayed/canceled one?"
+            instruction: "Is there an alternative flight for this delayed one?"
             input:
-              value: "{{workflow.input.value}}"
+              value: "{{get_status.output.flight-info}}"
+
+          # Branch: Handle rebooking suggestion
+          - id: handle_rebook_cancel
+            type: agent
+            agent_name: "FlightInfo"
+            depends_on: [route_by_status]
+            instruction: "Is there an alternative flight for this canceled one?"
+            input:
+              value: "{{get_status.output.flight-info}}"
+
+          # - id: send_confirmation
+          #   type: agent
+          #   agent_name: "NotificationSender"
+          #   depends_on:
+          #     - handle_happy
+          #     - handle_rebook_delay
+          #     - handle_rebook_cancel
+          #   input:
+          #     result: "{{workflow.output}}"
 
         output_mapping:
-          result:
+          passenger_info: "{{get_flight.output.name}}"
+          flight_info: "{{get_status.output.flight-info}}"
+          flight_status:  "{{get_status.output.status}}"
+          recommendation:
             coalesce:
-              - "{{handle_happy.output.result}}"
-              - "{{handle_rebook.output.result}}"
-          handler:
-            coalesce:
-              - "{{handle_happy.output.handler}}"
-              - "{{handle_rebook.output.handler}}"
-          category: "{{get_flight.output}}"
+              - "{{handle_happy.output}}"
+              - "{{handle_rebook_delay.output}}"
+              - "{{handle_rebook_cancel.output}}"
 
         skills:
           - id: "conditional_processing"

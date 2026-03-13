@@ -34,6 +34,20 @@ apps:
         then try to correct the SQL query and call the tool again.
         If the results are large and the tool indicates they were saved as an artifact, inform the user about the artifact.
         Always use the 'execute_sql_query' tool to interact with the database.
+        When asked for flight status, create a JSON artifact with {"status": <status>, "flight-info": <flight-info>} where status is the flight status.
+
+      input_schema:
+        type: object
+        properties:
+          value: {type: string}
+        required: [value]
+
+      output_schema:
+        type: object
+        properties:
+          status: {type: string}
+          flight-info: {type: string}
+        required: [result]
 
       # --- Configurable Agent Initialization & Cleanup ---
       agent_init_function:
@@ -79,7 +93,7 @@ apps:
 
       # Agent Card, Discovery, and Inter-Agent Communication
       agent_card:
-        description: "SQL Database Agent that can answer questions by querying a configured database."
+        description: "The Flight Information Agent. It has access to an SQL Database and can respond to queries about flights."
         defaultInputModes: ["text"]
         defaultOutputModes: ["text", "file"] # Can output text or files (artifacts)
         skills:

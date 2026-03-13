@@ -4,7 +4,7 @@ An event-triggered agentic AI deployment providing a personalized experience to 
 
 ## Features
 
-- **Flight Rebooking Recommendations**: Provides real-time flight recommendations is a passengers existing flight is delayed or canceled
+- **Flight Rebooking Recommendations**: Provides flight recommendations if a passengers existing flight is delayed or canceled
 - **Airport Directions**: Provides directions to various points in the airport, for example frequent flyer lounges
 - **Airport Concierge**: Calls upon frequent flyer services based on the passenger's loyalty tier
 - **Real-time Flight Information**: Live flight data as published by the FAA
@@ -47,20 +47,14 @@ pip install solace-agent-mesh
 sam init --skip
 ```
 
-5. Add the Solace Agent Mesh SQL Database plugin, RAG plugin and Event Mesh Gateway plugin:
-```bash
-sam plugin add flight-status-db --plugin sam-sql-database
-sam plugin add em-gateway --plugin sam-event-mesh-gateway
-```
-
-6. Run the setup script:
+5. Run the setup script:
 ```bash
 ./setup.sh
 
 ./setup.bat  # Windows users
 ```
 
-7. Copy `.env_sample` as `.env` and update your environment variables:
+6. Copy `.env_sample` as `.env` and update your environment variables:
 ```env
 # LLM Configuration
 LLM_SERVICE_ENDPOINT=""
@@ -79,7 +73,7 @@ EVENT_MESH_GW_SOLACE_BROKER_USERNAME=""
 EVENT_MESH_GW_SOLACE_BROKER_PASSWORD=""
 ```
 
-8. Install the MCP Filesystem Server
+7. Install the [MCP Filesystem Server](https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem) 
 ```bash
 npm i @modelcontextprotocol/server-filesystem
 ```

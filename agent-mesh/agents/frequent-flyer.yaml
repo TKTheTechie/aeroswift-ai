@@ -7,7 +7,7 @@
 log:
   stdout_log_level: INFO
   log_file_level: INFO
-  log_file: logs/aeroswift-db.log
+  log_file: logs/frequent-flyer.log
 
 
 # To use the `shared_config.yaml` file, uncomment the following line and remove the `shared_config` section below.
@@ -20,7 +20,7 @@ apps:
       <<: *broker_connection
     app_config:
       namespace: "${NAMESPACE}" # Your A2A topic namespace
-      agent_name: "AeroswiftDB"
+      agent_name: "FrequentFlyer"
       display_name: "Frequent Flyer Agent"
       supports_streaming: false # SQL agent tools are typically request-response
 
@@ -34,6 +34,20 @@ apps:
         then try to correct the SQL query and call the tool again.
         If the results are large and the tool indicates they were saved as an artifact, inform the user about the artifact.
         Always use the 'execute_sql_query' tool to interact with the database.
+        When asked for flight status, create a JSON artifact with {"flight": <flight>, "name": <name>} where status is the flight status.
+
+      input_schema:
+        type: object
+        properties:
+          value: {type: string}
+        required: [value]
+
+      output_schema:
+        type: object
+        properties:
+          flight: {type: string}
+          name: {type: string}
+        required: [result]
 
       # --- Configurable Agent Initialization & Cleanup ---
       agent_init_function:
@@ -79,7 +93,7 @@ apps:
 
       # Agent Card, Discovery, and Inter-Agent Communication
       agent_card:
-        description: "SQL Database Agent that can answer questions by querying a configured database."
+        description: "The Frequent Flyer Agent. It has access to an SQL Database and can respond to queries about frequent flyers, their flight and their benefits."
         defaultInputModes: ["text"]
         defaultOutputModes: ["text", "file"] # Can output text or files (artifacts)
         skills:
