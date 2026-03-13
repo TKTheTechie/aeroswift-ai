@@ -1,24 +1,19 @@
 <script>
-  import { onMount, onDestroy } from 'svelte';
-  import { SolaceVideoClient } from './common/solace';
+  import { onMount } from 'svelte';
   import {
-    APP_CONFIG,
     FACE_MATCH_REQUEST_TOPIC,
     FACE_MATCH_RESULT_TOPIC,
-    PASSENGER_LOOKUP_REQUEST_TOPIC,
     PASSENGER_LOOKUP_RESPONSE_TOPIC
   } from './common/config';
+
+  let { solaceClient } = $props();
 
   let scanState = $state('idle');
   let flyerId = $state('');
   let passengerDetails = $state('');
 
-  const solaceClient = new SolaceVideoClient(APP_CONFIG.solace);
-
-  onMount(async () => {
+  onMount(() => {
     try {
-      await solaceClient.connect();
-
       solaceClient.subscribeToTopic(FACE_MATCH_REQUEST_TOPIC, (_payload) => {
         scanState = 'matching';
         flyerId = '';
@@ -28,10 +23,6 @@
       solaceClient.subscribeToTopic(FACE_MATCH_RESULT_TOPIC, (payload) => {
         flyerId = payload.flyerId;
         scanState = 'looking_up';
-        solaceClient.publishControl(PASSENGER_LOOKUP_REQUEST_TOPIC, {
-          flyerId: payload.flyerId,
-          timestamp: new Date().toISOString()
-        });
       });
 
       solaceClient.subscribeToTopic(PASSENGER_LOOKUP_RESPONSE_TOPIC, (payload) => {
@@ -39,12 +30,8 @@
         scanState = 'found';
       });
     } catch (error) {
-      console.error('PassengerInfo: Failed to connect to Solace:', error);
+      console.error('PassengerInfo: Failed to subscribe to Solace topics:', error);
     }
-  });
-
-  onDestroy(() => {
-    solaceClient.disconnect();
   });
 </script>
 

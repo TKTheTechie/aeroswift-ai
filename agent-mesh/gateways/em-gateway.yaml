@@ -44,9 +44,9 @@ apps:
       event_handlers: # List of handlers for incoming Solace messages
         - name: "check_in_event"
           subscriptions:
-            - topic: "abc/jira/issue/create/>"
+            - topic: "aeroswift/face/match/result"
               qos: 1
-          input_expression: "template:This passenger has just checked in: {{json://input.payload}}"
+          input_expression: "template:This passenger has just checked in: {{json://input.payload.flyerId}}"
           payload_encoding: "utf-8"
           payload_format: "json"
           on_success: "success_response_handler"
