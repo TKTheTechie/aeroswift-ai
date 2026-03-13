@@ -1,5 +1,4 @@
 
-import 'dotenv/config';
 import solace from "solclientjs";
 
 solace.SolclientFactory.init({
@@ -9,6 +8,7 @@ solace.SolclientFactory.init({
 let _session = null;
 
 export function connectSolace(onMessage) {
+
   const session = solace.SolclientFactory.createSession({
     url: process.env.SOLACE_URL,
     vpnName: process.env.SOLACE_VPN,
