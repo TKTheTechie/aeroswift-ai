@@ -29,9 +29,6 @@ apps:
           2. Save that image to artifacts store as a .png
           3. Load the artifact and do image analysis
           4. Edit the image to exaggerate points of interest (eg. clubs/lounges)
-      #     5. Create a JSON artifact with {"result": <result>, "image": "artifact=<artifact-name>", "handler": "happy"}
-
-      #     IMPORTANT: When invoked by a workflow, use the exact output filename specified in the workflow instructions.
 
       # input_schema:
       #   type: object
@@ -42,10 +39,8 @@ apps:
       # output_schema:
       #   type: object
       #   properties:
-      #     result: {type: string}
-      #     image: {type: string}
-      #     handler: {type: string}
-      #   required: [result, handler]
+      #     map: {type: text}
+      #   required: [map]
 
       inject_system_purpose: true
       inject_response_format: true
@@ -78,12 +73,12 @@ apps:
             model: "gemini-2.5-flash"       # Vision model
             api_key: "${LLM_SERVICE_API_KEY}"
             api_base: "${LLM_SERVICE_ENDPOINT}"
-        - tool_type: builtin
-          tool_name: "edit_image_with_gemini"
-          tool_config:
-            gemini_api_key: "${LLM_SERVICE_API_KEY}"
-            api_base: "${LLM_SERVICE_ENDPOINT}"
-            model: "gemini-2.5-flash-image"
+        # - tool_type: builtin
+        #   tool_name: "edit_image_with_gemini"
+        #   tool_config:
+        #     gemini_api_key: "${LLM_SERVICE_API_KEY}"
+        #     api_base: "${LLM_SERVICE_ENDPOINT}"
+        #     model: "gemini-2.5-flash-image"
 
       agent_card:
         description: "The Airport Maps component. It searches the local directoy for an airport map and provides airline lounge locations based off that map."
@@ -105,6 +100,6 @@ apps:
       agent_discovery: 
         enabled: true
       inter_agent_communication:
-        allow_list: ["*"]
+        allow_list: [""]
 
         request_timeout_seconds: 600

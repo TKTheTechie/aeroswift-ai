@@ -4,7 +4,10 @@ requirements.txt
 .sam
 *.db
 *.log
-logs/
+*.key
 configs/
 src/
 node_modules/
+artifacts/
+venv
+

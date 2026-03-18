@@ -97,46 +97,36 @@ apps:
               - condition: "'{{get_status.output.status}}' == 'on-time'"
                 node: handle_happy
               - condition: "'{{get_status.output.status}}' == 'delayed'"
-                node: handle_rebook_delay
+                node: handle_rebook
               - condition: "'{{get_status.output.status}}' == 'canceled'"
-                node: handle_rebook_cancel
+                node: handle_rebook
 
           # Branch: Handle the happy path
           - id: handle_happy
             type: agent
             agent_name: "AirportMaps"
             depends_on: [route_by_status]
-            instruction: "Where are the lounges in this airport?"
+            instruction: "Where are the lounges in the departure airport?"
             input:
               value: "{{get_status.output.flight-info}}"
 
           # Branch: Handle rebooking suggestion
-          - id: handle_rebook_delay
+          - id: handle_rebook
             type: agent
             agent_name: "FlightInfo"
             depends_on: [route_by_status]
-            instruction: "Is there an alternative flight for this delayed one?"
+            instruction: "Is there an alternative flight for this one?"
             input:
               value: "{{get_status.output.flight-info}}"
 
-          # Branch: Handle rebooking suggestion
-          - id: handle_rebook_cancel
-            type: agent
-            agent_name: "FlightInfo"
-            depends_on: [route_by_status]
-            instruction: "Is there an alternative flight for this canceled one?"
-            input:
-              value: "{{get_status.output.flight-info}}"
-
-          # - id: send_confirmation
+          # # Branch: Handle the happy path
+          # - id: airport_map
           #   type: agent
-          #   agent_name: "NotificationSender"
-          #   depends_on:
-          #     - handle_happy
-          #     - handle_rebook_delay
-          #     - handle_rebook_cancel
+          #   agent_name: "AirportMaps"
+          #   depends_on: [handle_rebook]
+          #   instruction: "Where are the lounges in the departure airport?"
           #   input:
-          #     result: "{{workflow.output}}"
+          #     value: "{{get_status.output.flight-info}}"
 
         output_mapping:
           passenger_info: "{{get_flight.output.name}}"
@@ -145,8 +135,9 @@ apps:
           recommendation:
             coalesce:
               - "{{handle_happy.output}}"
-              - "{{handle_rebook_delay.output}}"
-              - "{{handle_rebook_cancel.output}}"
+              - "{{handle_rebook.output}}"
+              - "{{handle_rebook.output}}"
+          airport_map: "{{airport_map.output}}"
 
         skills:
           - id: "conditional_processing"
