@@ -6,22 +6,22 @@ An event-triggered agentic AI deployment providing a personalized experience to 
 
 - **Flight Rebooking Recommendations**: Provides flight recommendations if a passengers existing flight is delayed or canceled
 - **Airport Directions**: Provides directions to various points in the airport, for example frequent flyer lounges
-- **Airport Concierge**: Calls upon frequent flyer services based on the passenger's loyalty tier
-- **Real-time Flight Information**: Live flight data as published by the FAA
 - **Intelligent Agent Orchestration**: Coordination of tasks across the various agents
+- **Deterministic Workflows**: Provides a repeatable process for common triggers
 - **Business Process Automation**: Trigger an AI workflow based off a business event, such as a passenger check-in
 
 ## Tech Stack
 
 - **Agent Coordination**: Solace Agent Mesh Orchestrator
-- **Data Sources**: SQLite Database
+- **Data Sources**: PostgreSQL Database & Local Filesystem
 - **Messaging**: Solace Event Broker
 
 ## Prerequisites
 
 - Python with pip (v3.12.9 recommended)
 - Access to a Solace PubSub broker
-- npm
+- Docker for PostgreSQL databases
+- npm for MCP Server install
 
 ## Installation
 
@@ -37,24 +37,14 @@ source .venv/bin/activate
 .venv/Scripts/activate  # Windows users
 ```
 
-3. Install Solace Agent Mesh:
-```bash
-pip install solace-agent-mesh
-```
-
-4. Initialise Solace Agent Mesh:
-```bash
-sam init --skip
-```
-
-5. Run the setup script:
+3. Run the setup script:
 ```bash
 ./setup.sh
 
 ./setup.bat  # Windows users
 ```
 
-6. Copy `.env_sample` as `.env` and update your environment variables:
+4. Copy `.env_sample` as `.env` and update your environment variables:
 ```env
 # LLM Configuration
 LLM_SERVICE_ENDPOINT=""
@@ -71,11 +61,6 @@ EVENT_MESH_GW_SOLACE_BROKER_URL=""
 EVENT_MESH_GW_SOLACE_BROKER_VPN=""
 EVENT_MESH_GW_SOLACE_BROKER_USERNAME=""
 EVENT_MESH_GW_SOLACE_BROKER_PASSWORD=""
-```
-
-7. Install the [MCP Filesystem Server](https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem) 
-```bash
-npm i @modelcontextprotocol/server-filesystem
 ```
 
 ## Usage
@@ -96,12 +81,6 @@ Run Solace Agent Mesh in the background:
 nohup sam run &
 ```
 
-## Demo Mode
-
-To run the application without a Solace connection (useful for development and testing):
-
-1. Set `SOLACE_DEV_MODE=true` in your `.env` file
-
 ## Components
 
 ### Orchestrator Agent
@@ -117,11 +96,16 @@ Accesses a database of frequent flyer information, including:
 - Member Profiles
 - Member Statuses
 
-### FDPS Agent
-Accesses a database of real-time flight information, including:
+### Flight Information Agent
+Accesses a database of flight information, including:
 - Flight source & destination
 - Flight arrival
 - Flight status
+
+### Airport Maps Agent
+Accesses a local directory for airport maps, providing information on:
+- Location of lounges/clubs
+- Location of facilities
 
 ## Solace PubSub+ Integration
 
@@ -130,6 +114,8 @@ The application uses Solace PubSub for real-time messaging:
 ### Topics
 
 - **Solace Agent Mesh**: `Pre-built topics that Solace Agent Mesh leverages` - Provides the communication between all agents and gateways
+- **Frequent Flyer Identified**: `aeroswift/terminal1/v1/face/match/result` - Receives a frequent flyer ID from the facial recognition component
+- **Agent Mesh Response**: `aeroswift/terminal1/v1/passenger/lookup/response/x` - Publishes the result of the Agent Mesh processing
 
 ## Troubleshooting
 

@@ -3,7 +3,7 @@
 log:
   stdout_log_level: INFO
   log_file_level: INFO
-  log_file: logs/orchestrator-agent.log
+  log_file: orchestrator-agent.log
 
 # Shared SAM config
 !include ../shared_config.yaml

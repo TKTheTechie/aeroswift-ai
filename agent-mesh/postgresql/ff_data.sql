@@ -38,8 +38,8 @@ CREATE TABLE IF NOT EXISTS member_flights (
 -- Import CSVs (paths relative to where psql is run; adjust if needed)
 -- \COPY runs client-side so it uses local file paths
 
-\COPY ff_benefits     FROM 'C:\Users\rober\OneDrive\Documents\Git\aeroswift-ai\agent-mesh/data/ff_data/ff_benefits.csv'    WITH (FORMAT csv, HEADER true);
-\COPY ff_tiers        FROM 'C:\Users\rober\OneDrive\Documents\Git\aeroswift-ai\agent-mesh/data/ff_data/ff_tiers.csv'       WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');
-\COPY member_status   FROM 'C:\Users\rober\OneDrive\Documents\Git\aeroswift-ai\agent-mesh/data/ff_data/member_status.csv'  WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');
-\COPY member_profiles FROM 'C:\Users\rober\OneDrive\Documents\Git\aeroswift-ai\agent-mesh/data/ff_data/member_profiles.csv' WITH (FORMAT csv, HEADER true);
-\COPY member_flights  FROM 'C:\Users\rober\OneDrive\Documents\Git\aeroswift-ai\agent-mesh/data/ff_data/member_flights.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');
+\COPY ff_benefits     FROM '/data/ff_benefits.csv'    WITH (FORMAT csv, HEADER true);
+\COPY ff_tiers        FROM '/data/ff_tiers.csv'       WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');
+\COPY member_status   FROM '/data/member_status.csv'  WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');
+\COPY member_profiles FROM '/data/member_profiles.csv' WITH (FORMAT csv, HEADER true);
+\COPY member_flights  FROM '/data/member_flights.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');

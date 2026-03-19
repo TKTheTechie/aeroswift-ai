@@ -3,7 +3,7 @@
 log:
   stdout_log_level: INFO
   log_file_level: INFO
-  log_file: logs/airport-maps.log
+  log_file: airport-maps.log
 
 # Shared SAM config
 !include ../shared_config.yaml
@@ -28,19 +28,7 @@ apps:
           1. Use the MCP tool to get the image from local storage
           2. Save that image to artifacts store as a .png
           3. Load the artifact and do image analysis
-          4. Edit the image to exaggerate points of interest (eg. clubs/lounges)
-
-      # input_schema:
-      #   type: object
-      #   properties:
-      #     value: {type: string}
-      #   required: [value]
-
-      # output_schema:
-      #   type: object
-      #   properties:
-      #     map: {type: text}
-      #   required: [map]
+          4. When asked for a map, create a JSON artifact with {"map_description": <description>, "map_location": <image_path>} where image_path is the full image path in the artifacts dir.
 
       inject_system_purpose: true
       inject_response_format: true
@@ -73,12 +61,6 @@ apps:
             model: "gemini-2.5-flash"       # Vision model
             api_key: "${LLM_SERVICE_API_KEY}"
             api_base: "${LLM_SERVICE_ENDPOINT}"
-        # - tool_type: builtin
-        #   tool_name: "edit_image_with_gemini"
-        #   tool_config:
-        #     gemini_api_key: "${LLM_SERVICE_API_KEY}"
-        #     api_base: "${LLM_SERVICE_ENDPOINT}"
-        #     model: "gemini-2.5-flash-image"
 
       agent_card:
         description: "The Airport Maps component. It searches the local directoy for an airport map and provides airline lounge locations based off that map."

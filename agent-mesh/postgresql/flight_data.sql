@@ -13,4 +13,4 @@ CREATE TABLE IF NOT EXISTS flights (
 -- Import CSVs (paths relative to where psql is run; adjust if needed)
 -- \COPY runs client-side so it uses local file paths
 
-\COPY flights     FROM 'C:\Users\rober\OneDrive\Documents\Git\aeroswift-ai\agent-mesh/data/flight_data/flight_data.csv' WITH (FORMAT csv, HEADER true);
+\COPY flights     FROM '/data/flight_data.csv' WITH (FORMAT csv, HEADER true);

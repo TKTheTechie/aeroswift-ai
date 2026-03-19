@@ -1,7 +1,7 @@
 log:
   stdout_log_level: INFO
   log_file_level: INFO
-  log_file: logs/conditional_branching.log
+  log_file: conditional_branching.log
 
 !include ../shared_config.yaml
 
@@ -51,6 +51,7 @@ apps:
           1. Looks up information on a passenger who has just checked in, including flight number
           2. Looks up that flight number to determine the flight status
           3. If the flight status is delayed or canceled, offer rebooking suggestions
+          4. If available, provide a map of the airport and provide information on where the lounges are
 
         input_schema:
           type: object
@@ -119,14 +120,14 @@ apps:
             input:
               value: "{{get_status.output.flight-info}}"
 
-          # # Branch: Handle the happy path
-          # - id: airport_map
-          #   type: agent
-          #   agent_name: "AirportMaps"
-          #   depends_on: [handle_rebook]
-          #   instruction: "Where are the lounges in the departure airport?"
-          #   input:
-          #     value: "{{get_status.output.flight-info}}"
+          # Branch: Handle the happy path
+          - id: airport_map
+            type: agent
+            agent_name: "AirportMaps"
+            depends_on: [handle_rebook]
+            instruction: "Where are the lounges in the departure airport?"
+            input:
+              value: "{{get_status.output.flight-info}}"
 
         output_mapping:
           passenger_info: "{{get_flight.output.name}}"
@@ -135,7 +136,6 @@ apps:
           recommendation:
             coalesce:
               - "{{handle_happy.output}}"
-              - "{{handle_rebook.output}}"
               - "{{handle_rebook.output}}"
           airport_map: "{{airport_map.output}}"
 
