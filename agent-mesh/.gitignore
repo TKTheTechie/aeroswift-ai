@@ -2,6 +2,7 @@ requirements.txt
 .env
 .venv
 .sam
+*.whl
 *.db
 *.log
 *.key

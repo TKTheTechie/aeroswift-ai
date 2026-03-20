@@ -28,7 +28,7 @@ apps:
           1. Use the MCP tool to get the image from local storage
           2. Save that image to artifacts store as a .png
           3. Load the artifact and do image analysis
-          4. When asked for a map, create a JSON artifact with {"map_description": <description>, "map_location": <image_path>} where image_path is the full image path in the artifacts dir.
+          4. When asked for a map, create a JSON artifact with {"map-description": <description>, "map-location": <image_path>} where image_path is the full image path in the artifacts dir.
 
       inject_system_purpose: true
       inject_response_format: true

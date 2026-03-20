@@ -44,8 +44,8 @@ apps:
       output_schema:
         type: object
         properties:
-          status: {type: string}
           flight-info: {type: string}
+          status: {type: string}
         required: [status, flight-info]
 
       tools:

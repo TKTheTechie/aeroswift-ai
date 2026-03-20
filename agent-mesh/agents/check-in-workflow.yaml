@@ -1,7 +1,7 @@
 log:
   stdout_log_level: INFO
   log_file_level: INFO
-  log_file: conditional_branching.log
+  log_file: logs/conditional_branching.log
 
 !include ../shared_config.yaml
 
@@ -56,19 +56,20 @@ apps:
         input_schema:
           type: object
           properties:
-            value:
+            flyerId:
               type: string
               description: "The frequent flyer number to process"
-          required: [value]
+          required: [flyerId]
 
         output_schema:
           type: object
           properties:
             passenger_info:  {type: string, description: "Passenger from loyalty lookup"}
-            flight_info:   {type: string, description: "Information on the passenger's flight"}
-            flight_status:   {type: string, description: "Current status of the passenger's flight"}
-            recommendation:  {type: string, description: "Lounge info or rebooking suggestion based on flight status"}
-          required: [passenger_info, flight_info, flight_status, recommendation]
+            flight-info:   {type: string, description: "Information on the passenger's flight"}
+            flight-status:   {type: string, description: "Current status of the passenger's flight"}
+            recommendation:  {type: string, description: "Rebooking suggestion based on flight status"}
+            airport-map: {type: string, description: "Lounge info based on departure airport"}
+          required: [passenger_info, flight_info, flight_status, airport-map]
 
         nodes:       
           # Step 1: Get their flight number
@@ -77,7 +78,7 @@ apps:
             agent_name: "FrequentFlyer"
             instruction: "Based on the frequent flyer number, what is this member's flight?"
             input:
-              value: "{{workflow.input.value}}"
+              value: "{{workflow.input.flyerId}}"
 
           # Step 2: Get the flight status
           - id: get_status
@@ -133,11 +134,11 @@ apps:
           passenger_info: "{{get_flight.output.name}}"
           flight_info: "{{get_status.output.flight-info}}"
           flight_status:  "{{get_status.output.status}}"
-          recommendation:
+          recommendation: "{{handle_rebook.output}}"
+          airport_map: 
             coalesce:
               - "{{handle_happy.output}}"
-              - "{{handle_rebook.output}}"
-          airport_map: "{{airport_map.output}}"
+              - "{{airport_map.output}}"
 
         skills:
           - id: "conditional_processing"
