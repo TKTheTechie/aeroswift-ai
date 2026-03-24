@@ -1,0 +1,91 @@
+# Plugin Metadata:
+# Name: sam-sql-database
+# Version: 0.1.0
+# Description: A plugin that provides a SQL agent to perform complex queries based on natural language.
+# Author: SolaceLabs <solacelabs@solace.com>
+
+log:
+  stdout_log_level: INFO
+  log_file_level: INFO
+  log_file: frequent-flyer.log
+
+# To use the `shared_config.yaml` file, uncomment the following line and remove the `shared_config` section below.
+!include ../shared_config.yaml
+
+apps:
+  - name: flight-info-app
+    app_module: solace_agent_mesh.agent.sac.app
+    broker:
+      <<: *broker_connection
+    app_config:
+      namespace: "${NAMESPACE}" # Your A2A topic namespace
+      agent_name: "FrequentFlyer"
+      display_name: "Frequent Flyer Agent"
+      supports_streaming: false # SQL agent tools are typically request-response
+
+      model: *general_model
+      instruction: |
+        You are an expert SQL assistant for the connected database.
+        The database schema and query examples will be provided to you.
+        Your primary goal is to translate user questions into accurate SQL queries.
+        If a user asks to query the database, generate the SQL and call the 'execute_sql_query' tool.
+        If the 'execute_sql_query' tool returns an error, analyze the error message and the original SQL,
+        then try to correct the SQL query and call the tool again.
+        If the results are large and the tool indicates they were saved as an artifact, inform the user about the artifact.
+        Always use the 'execute_sql_query' tool to interact with the database.
+        When asked for flight status, create a JSON artifact with {"flight": <flight>, "name": <name>} where status is the flight status.
+
+      input_schema:
+        type: object
+        properties:
+          value: {type: string}
+        required: [value]
+
+      output_schema:
+        type: object
+        properties:
+          flight: {type: string}
+          name: {type: string}
+        required: [flight, name]
+
+      tools:
+        - tool_type: builtin-group
+          group_name: "artifact_management"
+        - tool_type: builtin-group
+          group_name: "data_analysis"
+        - tool_type: python
+          component_module: "sam_sql_database_tool.tools"
+          component_base_path: "."
+          class_name: "SqlDatabaseTool"
+          tool_config:
+            tool_name: "QueryFrequentFlyerDatabase"
+            tool_description: "Query the Frequent Flyer postgresql database."
+            connection_string: "${AEROSWIFT_DB}"
+            # auto_detect_schema: true
+            schema_summary_override: "A table named ff_benefits with columns 'tier' and 'perkId' and 'perk' and
+              a table named ff_tiers with columns 'tier' and 'miles' and
+              a table named member_profiles with columns 'id' and 'firstName' and 'lastName' and 'address' and 'aptNumber' and 'city' and 'state' and 'country' and 'zipcode' and 'birthdate' and
+              a table named member_status with columns 'ffNumber' and 'status' and
+              a table named member_flights with columns 'ffNumber' and 'flightNumber'"
+
+      session_service: *default_session_service
+      artifact_service: *default_artifact_service
+
+      # Agent Card, Discovery, and Inter-Agent Communication
+      agent_card:
+        description: "The Frequent Flyer Agent. It has access to an SQL Database and can respond to queries about frequent flyers, their flight and their benefits."
+        defaultInputModes: ["text"]
+        defaultOutputModes: ["text", "file"] # Can output text or files (artifacts)
+        skills:
+          - id: "sql_query"
+            name: "Database Query"
+            description: "Answers questions by querying the connected SQL database."
+
+      agent_card_publishing:
+        interval_seconds: 30
+
+      agent_discovery:
+        enabled: false
+
+      inter_agent_communication:
+        allow_list: [""]

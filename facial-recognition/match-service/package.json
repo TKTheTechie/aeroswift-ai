@@ -1,0 +1,20 @@
+{
+  "type": "module",
+  "scripts": {
+    "start": "node solace-app.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "dotenv-expand": "^11.0.0",
+    "@qdrant/js-client-rest": "^1.17.0",
+    "@tensorflow/tfjs-node": "^4.22.0",
+    "@vladmandic/face-api": "^1.7.15",
+    "@vladmandic/human": "^3.3.6",
+    "canvas": "^3.2.1",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "onnxruntime-node": "^1.24.2",
+    "sharp": "^0.33.5",
+    "solclientjs": "^10.15.0"
+  }
+}

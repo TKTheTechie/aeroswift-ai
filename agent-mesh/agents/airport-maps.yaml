@@ -1,0 +1,89 @@
+# Solace Agent Mesh Orchestrator Agent Configurations
+
+log:
+  stdout_log_level: INFO
+  log_file_level: INFO
+  log_file: airport-maps.log
+
+# Shared SAM config
+!include ../shared_config.yaml
+
+apps:
+  - name: airport-maps-agent_app
+    app_base_path: .
+    app_module: solace_agent_mesh.agent.sac.app
+    broker:
+      <<: *broker_connection
+
+    app_config:
+      namespace: ${NAMESPACE} 
+      supports_streaming: true
+      agent_name: "AirportMaps"
+      display_name: "Airport Maps Agent"
+      model: *general_model 
+
+      instruction: |
+        You are the Airport Maps Agent within an AI agentic system. 
+        You follow these steps to complete processing:
+          1. Use the MCP tool to get the image from local storage
+          2. Save that image to artifacts store as a .png
+          3. Load the artifact and do image analysis
+          4. When asked for a map, create a JSON artifact with {"map-description": <description>, "map-location": <image_path>} 
+              where description is provided in an HTML format; and
+              where image_path is the full image path as found in the local directory.
+
+      inject_system_purpose: true
+      inject_response_format: true
+      inject_user_profile: true
+      session_service: *default_session_service
+      artifact_service: *default_artifact_service
+      artifact_handling_mode: "reference" 
+      enable_embed_resolution: true 
+      enable_artifact_content_instruction: true 
+      data_tools_config: *default_data_tools_config
+      tools: 
+        - group_name: artifact_management
+          tool_type: builtin-group
+        - tool_type: builtin-group
+          group_name: "data_analysis"
+        - tool_type: mcp
+          allow_list:
+            - read_media_file
+            - list_directory
+          connection_params:
+            command: npx
+            type: stdio
+            args:
+              - -y
+              - '@modelcontextprotocol/server-filesystem'
+              - 'data/terminal_maps'
+        - tool_type: builtin
+          tool_name: "describe_image"
+          tool_config:
+            model: "gemini-2.5-flash"       # Vision model
+            api_key: "${LLM_SERVICE_API_KEY}"
+            api_base: "${LLM_SERVICE_ENDPOINT}"
+
+      agent_card:
+        description: "The Airport Maps component. It searches the local directoy for an airport map and provides airline lounge locations based off that map."
+        defaultInputModes: [text]
+        defaultOutputModes: [text, file]
+        skills:
+        - id: mcp_get_image
+          name: Get Image
+          description: Fetches an image from local storage and saves it to artifact
+        - id: image_description
+          name: Describe Images
+          description: Analyzes airport map images
+        - id: image_edit
+          name: Edit Images
+          description: Edit airport maps to make certain points of interest more obvious
+
+      agent_card_publishing: 
+        interval_seconds: 10
+      agent_discovery: 
+        enabled: true
+      inter_agent_communication:
+        allow_list: [""]
+
+        request_timeout_seconds: 600

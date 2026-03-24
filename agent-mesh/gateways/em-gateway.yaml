@@ -1,0 +1,79 @@
+# Plugin Metadata:
+# Name: sam-event-mesh-gateway
+# Version: 0.1.0
+# Description: Solace Agent Mesh Gateway plugin for integrating with Solace PubSub+ event brokers.
+# Author: SolaceLabs <solacelabs@solace.com>
+# Test:
+## Sent a valid json payload to topic "abc/jira/issue/create/>" and verified it was processed by the OrchestratorAgent and response published to "event_mesh/responses/>".
+
+log:
+  stdout_log_level: INFO
+  log_file_level: INFO
+  log_file: logs/em-gateway.log
+
+# To use the `shared_config.yaml` file, uncomment the following line and remove the `shared_config` section below.
+!include ../shared_config.yaml
+
+apps:
+  - name: em-gateway-app
+    app_module: sam_event_mesh_gateway.app
+    broker:
+      <<: *broker_connection
+
+    app_config:
+      namespace: "${NAMESPACE}" 
+      gateway_id: "event-mesh-gw-01" # Unique ID for this gateway instance
+
+      artifact_service: *default_artifact_service
+      authorization_service:
+        type: "none" # Or "default_rbac"
+      default_user_identity: "anonymous_event_mesh_user" # If no identity from event
+      
+      # --- Event Mesh Gateway Specific Parameters ---
+      event_mesh_broker_config: # For the data plane Solace client
+        broker_url: ${EM_GATEWAY_SOLACE_BROKER_URL} # Can be same or different from control plane
+        broker_vpn: ${EM_GATEWAY_SOLACE_BROKER_VPN}
+        broker_username: ${EM_GATEWAY_SOLACE_BROKER_USERNAME}
+        broker_password: ${EM_GATEWAY_SOLACE_BROKER_PASSWORD}
+        # Other data plane client settings (e.g., client_name, reconnection_strategy)
+
+      ##############################
+      # 1. UPDATE REQUIRED - START #
+      ##############################
+      
+      event_handlers: # List of handlers for incoming Solace messages
+        - name: "face_match_workflow"
+          subscriptions:
+            - topic: "aeroswift/terminal1/v1/face/match/result"
+              qos: 1
+          target_workflow_name: "CheckInWorkflow"
+          input_expression: "input.payload"
+          payload_encoding: "utf-8"
+          payload_format: "json"
+          on_success: "workflow_success_handler"
+          on_error: "error_response_handler"
+          default_user_identity: "anonymous_event_mesh_user"
+          forward_context:
+            correlation_id: "input.user_properties:correlation_id"
+
+      output_handlers: # Optional: List of handlers for publishing A2A responses
+        - name: "success_response_handler"
+          max_file_size_for_base64_bytes: 5242880 # 5MB limit for embedded files
+          topic_expression: "template:aeroswift/terminal1/v1/passenger/lookup/response"
+          payload_expression: "task_response:text" # Use the simplified payload's text field
+          payload_encoding: "utf-8"
+          payload_format: "text"
+        - name: "workflow_success_handler"
+          topic_expression: "template:aeroswift/terminal1/v1/passenger/lookup/response"
+          payload_expression: "input.payload:structured_output"  # Extract structured_output field
+          payload_encoding: "utf-8"
+          payload_format: "json"
+        - name: "error_response_handler"
+          topic_expression: "template:event_mesh/errors/{{text://user_data.forward_context:correlation_id}}"
+          payload_expression: "task_response:a2a_task_response.error" # Send the full error object
+          payload_encoding: "utf-8"
+          payload_format: "json"
+
+      ############################
+      # 1. UPDATE REQUIRED - END #
+      ############################
