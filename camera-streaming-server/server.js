@@ -5,6 +5,7 @@ const WebSocket = require('ws');
 const YOLOv8Detector = require('./yolo-detector');
 const FaceDetector = require('./face-detector');
 const EmotionDetector = require('./emotion-detector');
+const FaceMatcher = require('./face-matcher'); // face matcher addition
 const path = require('path');
 const { expand } = require('dotenv-expand');
 expand(require('dotenv').config({
@@ -27,6 +28,8 @@ class ESP32VideoStreamer {
     this.emotionDetector = null;
     this.lastDetectionTime = 0;
     this.detectionQueue = [];
+    this.faceMatcher = null; // face matcher addition
+    
     this.faceDetectionActive = true;
 
     this.config = {
@@ -110,6 +113,16 @@ class ESP32VideoStreamer {
             console.log('  Emotion detection enabled');
           }
         }
+        // LGU: Initialize face matcher
+        console.log('Initializing face matcher...');
+        this.faceMatcher = new FaceMatcher();
+        try {
+          await this.faceMatcher.initialize();
+          console.log('  Passport face matching enabled');
+        } catch (err) {
+          console.warn('  Face matching disabled:', err.message);
+          this.faceMatcher = null;
+        } 
       } else {
         console.error('Failed to initialize face detector');
         this.config.detection.enabled = false;
@@ -487,6 +500,27 @@ class ESP32VideoStreamer {
         emotionDetection: this.emotionDetector !== null
       };
 
+          
+      // LGU: Match against passport if faces detected
+      if (this.faceMatcher && analytics.faceCount > 0) {
+        const matchResult = await this.faceMatcher.matchFace(frameData);
+        analytics.passportMatch = matchResult;
+        
+        if (matchResult.match) {
+          console.log(`✅ PASSPORT MATCH - Confidence: ${matchResult.confidence}`);
+          analytics.passenger = {
+                                  name: "Laurent Guillot",
+                                  loyaltyStatus: "Economy Plus",
+                                  flightNumber: "AF 1234",
+                                  seatAssignment: "33A",
+                                  destination: "Paris",
+                                  boardingGroup: "Group 6"
+                                };
+        } else {
+          console.log(`❌ No passport match - Distance: ${matchResult.distance}`);
+        }
+      }
+
       this.publishAnalytics(analytics);
       
       if (faces.length > 0) {
@@ -532,7 +566,8 @@ class ESP32VideoStreamer {
     }
 
     const payload = JSON.stringify(analytics, null, 2);
-    
+
+
     console.log('\n📊 Publishing Analytics:');
     console.log('─────────────────────────────────────────');
     console.log(`Topic: ${this.config.detection.analyticsTopic}`);
