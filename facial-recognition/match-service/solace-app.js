@@ -14,7 +14,8 @@ import { connectSolace, publishToTopic } from './solace.js';
 
 const COLLECTION = process.env.QDRANT_COLLECTION || 'flyers';
 const MATCH_THRESHOLD = parseFloat(process.env.MATCH_THRESHOLD) || 0.90;
-const RESULT_TOPIC = process.env.FACE_MATCH_RESULT_TOPIC || 'aeroswift/face/match/result';
+const RESULT_TOPIC = process.env.TOPIC_FACE_MATCH_RESULT || 'aeroswift/terminal1/v1/face/match/result';
+const ERROR_TOPIC = process.env.TOPIC_FACE_MATCH_ERROR || 'aeroswift/terminal1/v1/face/match/error';
 
 const qdrant = new QdrantClient({ url: process.env.QDRANT_URL || 'http://localhost:6333' });
 
@@ -78,7 +79,12 @@ async function onMessage(msg) {
     publishToTopic(RESULT_TOPIC, result);
 
   } catch (err) {
-    console.error('❌ Error processing message:', err.message, { messageId });
-    throw err; // no ACK → redelivery
+    if (err.message === 'No face detected') {
+      console.warn(`⚠️ No face detected in message ${messageId}, publishing error`);
+      publishToTopic(ERROR_TOPIC, { error: 'No face detected', timestamp: new Date().toISOString(), messageId });
+    } else {
+      console.error('❌ Error processing message:', err.message, { messageId });
+      throw err; // no ACK → redelivery
+    }
   }
 }
