@@ -38,23 +38,16 @@
   <div class="min-h-screen bg-gradient-to-br from-aero-bg via-white to-aero-bg flex flex-col">
     <!-- Header -->
     <header class="bg-white shadow-md border-b-4 border-aero-teal">
-      <div class="container mx-auto px-4 py-4 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="w-12 h-12 bg-gradient-to-br from-aero-teal to-aero-dark rounded-full flex items-center justify-center">
-            <span class="text-white text-2xl font-bold">✈</span>
+      <div class="container mx-auto px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <div class="flex items-center gap-2 shrink-0">
+          <div class="w-9 h-9 sm:w-12 sm:h-12 bg-gradient-to-br from-aero-teal to-aero-dark rounded-full flex items-center justify-center">
+            <span class="text-white text-lg sm:text-2xl font-bold">✈</span>
           </div>
-          <h1 class="text-3xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-aero-teal to-aero-dark">
+          <h1 class="text-xl sm:text-3xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-aero-teal to-aero-dark">
             AeroSwift AI
           </h1>
         </div>
-        <button
-          onclick={scanNextPassenger}
-          disabled={!solaceClient}
-          class="px-5 py-2 bg-gradient-to-r from-aero-teal to-aero-dark text-white font-semibold rounded-full shadow hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
-        >
-          Scan Next Passenger
-        </button>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 ml-auto shrink-0">
           <div class="w-3 h-3 bg-aero-teal rounded-full animate-pulse"></div>
           <span class="text-sm font-medium text-gray-600">Live</span>
         </div>
@@ -64,6 +57,14 @@
     <!-- Main Content -->
     <main class="flex-1 container mx-auto px-4 py-6 flex flex-col gap-6">
       {#if solaceClient}
+        <div class="flex justify-center">
+          <button
+            onclick={scanNextPassenger}
+            class="px-6 py-3 bg-gradient-to-r from-aero-teal to-aero-dark text-white font-semibold rounded-full shadow hover:opacity-90 transition-opacity whitespace-nowrap"
+          >
+            Scan Next Passenger
+          </button>
+        </div>
         <CameraFeed {solaceClient} />
         <PassengerInfo {solaceClient} />
       {:else}
