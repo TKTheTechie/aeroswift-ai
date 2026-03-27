@@ -3,6 +3,7 @@
   import CameraFeed from './lib/CameraFeed.svelte';
   import PassengerInfo from './lib/PassengerInfo.svelte';
   import SplashScreen from './lib/SplashScreen.svelte';
+  import WebcamFeed from './lib/WebcamFeed.svelte';
   import { SolaceVideoClient } from './lib/common/solace';
   import { APP_CONFIG, FACE_SCAN_RESET_TOPIC } from './lib/common/config';
 
@@ -10,7 +11,8 @@
     solaceClient?.publishControl(FACE_SCAN_RESET_TOPIC, { action: 'reset', timestamp: new Date().toISOString() });
   }
 
-  let showSplash = $state(true);
+  // 'splash' | 'main' | 'webcam'
+  let currentView = $state('splash');
   let solaceClient = $state(null);
 
   onMount(async () => {
@@ -28,12 +30,18 @@
   });
 
   function handleEnter() {
-    showSplash = false;
+    currentView = 'main';
+  }
+
+  function handleWebcam() {
+    currentView = 'webcam';
   }
 </script>
 
-{#if showSplash}
-  <SplashScreen onEnter={handleEnter} />
+{#if currentView === 'splash'}
+  <SplashScreen onEnter={handleEnter} onWebcam={handleWebcam} />
+{:else if currentView === 'webcam'}
+  <WebcamFeed onBack={() => currentView = 'splash'} />
 {:else}
   <div class="min-h-screen bg-gradient-to-br from-aero-bg via-white to-aero-bg flex flex-col">
     <!-- Header -->
