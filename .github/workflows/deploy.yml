@@ -42,11 +42,3 @@ jobs:
           VITE_VIDEO_TOPIC: ${{ vars.VITE_VIDEO_TOPIC }}
           VITE_ANALYTICS_TOPIC: ${{ vars.VITE_ANALYTICS_TOPIC }}
 
-      - name: Deploy to Vercel
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: aersoswift-web-app
-          vercel-args: '--prod'
