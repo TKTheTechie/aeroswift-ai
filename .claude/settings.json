@@ -4,7 +4,13 @@
       "Bash(ls -lh /Users/thomaskunnumpurath/dev/aeroswift-ai/aersoswift-web-app/static/*.glb)",
       "Bash(npx --yes @gltf-transform/cli --version)",
       "Bash(npx @gltf-transform/cli optimize airplane.glb airplane.glb --compress meshopt)",
-      "Bash(npm install meshoptimizer)"
+      "Bash(npm install meshoptimizer)",
+      "Bash(git revert:*)",
+      "Bash(npm install:*)",
+      "Bash(node scripts/setup-faceapi-models.js)"
+    ],
+    "additionalDirectories": [
+      "/Users/thomaskunnumpurath/dev/aeroswift-ai/aersoswift-web-app"
     ]
   }
 }
