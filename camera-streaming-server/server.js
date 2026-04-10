@@ -259,7 +259,7 @@ class ESP32VideoStreamer {
           'Connection': 'keep-alive',
           'Accept': '*/*'
         },
-        timeout: 30000 // 30 second timeout
+        timeout: 120000 // 30 second timeout
       };
 
       console.log(`Connecting to ${options.hostname}:${options.port}${options.path}`);
@@ -287,52 +287,54 @@ class ESP32VideoStreamer {
         // Disable buffering - process data immediately
         response.on('data', (chunk) => {
           totalBytesReceived += chunk.length;
-          
-          // Report bytes received every 2 seconds
+
           const now = Date.now();
           if (now - lastBytesReport > 2000) {
-            const bytesPerSecond = totalBytesReceived / ((now - lastBytesReport) / 1000);
+            const elapsed = (now - lastBytesReport) / 1000;
+            const bytesPerSecond = totalBytesReceived / elapsed;
             console.log(`Receiving ${(bytesPerSecond / 1024).toFixed(2)} KB/s from ESP32`);
             totalBytesReceived = 0;
             lastBytesReport = now;
           }
-          
-          frameBuffer = Buffer.concat([frameBuffer, chunk]);
-          
-          // Look for JPEG frame boundaries
-          const startMarker = Buffer.from([0xFF, 0xD8]); // JPEG start
-          const endMarker = Buffer.from([0xFF, 0xD9]);   // JPEG end
 
-          let startIndex = 0;
-          
-          // Process all complete frames in the buffer
+          frameBuffer = Buffer.concat([frameBuffer, chunk]);
+
+          const startMarker = Buffer.from([0xFF, 0xD8]);
+          const endMarker   = Buffer.from([0xFF, 0xD9]);
+
+          let searchFrom = 0;
+          let lastCompleteEnd = -1;
+
           while (true) {
-            startIndex = frameBuffer.indexOf(startMarker, startIndex);
-            if (startIndex === -1) break;
-            
-            const endIndex = frameBuffer.indexOf(endMarker, startIndex + 2);
-            if (endIndex === -1) break;
-            
-            // Extract complete JPEG frame
-            const frame = frameBuffer.subarray(startIndex, endIndex + 2);
-            framesDetected++;
-            
-            const timeSinceLastFrame = now - lastFrameDetectedTime;
-            
-            // Log first few frames to verify detection
-            if (framesDetected <= 10) {
-              console.log(`Frame ${framesDetected} detected: ${frame.length} bytes, ${timeSinceLastFrame}ms since last frame`);
+            const startIdx = frameBuffer.indexOf(startMarker, searchFrom);
+            if (startIdx === -1) {
+              // No start marker at all — discard everything
+              frameBuffer = Buffer.alloc(0);
+              return;
             }
-            
+
+            const endIdx = frameBuffer.indexOf(endMarker, startIdx + 2);
+            if (endIdx === -1) {
+              // Incomplete frame — keep from this start marker, wait for more data
+              frameBuffer = startIdx > 0 ? frameBuffer.subarray(startIdx) : frameBuffer;
+              return;
+            }
+
+            // Complete frame found
+            const frame = frameBuffer.subarray(startIdx, endIdx + 2);
+            framesDetected++;
+
+            if (framesDetected <= 10) {
+              console.log(`Frame ${framesDetected}: ${frame.length} bytes`);
+            }
+
             lastFrameDetectedTime = now;
-            
-            // Throttle frame rate if configured
-            if (this.config.server.minFrameInterval === 0 || 
+
+            if (this.config.server.minFrameInterval === 0 ||
                 now - this.lastFrameTime >= this.config.server.minFrameInterval) {
               this.publishVideoFrame(frame);
               this.lastFrameTime = now;
-              
-              // Queue frame for face detection if enabled and a new scan is active
+
               if (this.config.detection.enabled &&
                   this.faceDetectionActive &&
                   now - this.lastDetectionTime >= this.config.detection.intervalMs) {
@@ -341,18 +343,18 @@ class ESP32VideoStreamer {
               }
             }
 
-            // Move to next potential frame
-            startIndex = endIndex + 2;
-          }
-          
-          // Keep only data after the last processed frame
-          if (startIndex > 0) {
-            frameBuffer = frameBuffer.subarray(startIndex);
+            lastCompleteEnd = endIdx + 2;
+            searchFrom = lastCompleteEnd;
           }
 
-          // Keep buffer size manageable
-          if (frameBuffer.length > 100000) {
-            console.warn(`Buffer overflow: ${frameBuffer.length} bytes, clearing...`);
+          // Trim everything before the last processed frame
+          if (lastCompleteEnd > 0) {
+            frameBuffer = frameBuffer.subarray(lastCompleteEnd);
+          }
+
+          // Safety valve — should rarely trigger now
+          if (frameBuffer.length > 512 * 1024) {
+            console.warn(`Buffer safety clear: ${frameBuffer.length} bytes`);
             frameBuffer = Buffer.alloc(0);
           }
         });
@@ -360,11 +362,13 @@ class ESP32VideoStreamer {
         response.on('error', (error) => {
           console.error('Stream error:', error);
           this.streamActive = false;
+          setTimeout(() => this.startVideoStream(), 3000);
         });
 
         response.on('end', () => {
           console.log('Stream ended');
           this.streamActive = false;
+          setTimeout(() => this.startVideoStream(), 3000);
         });
 
         resolve();
@@ -401,26 +405,45 @@ class ESP32VideoStreamer {
     const now = Date.now();
     const frameId = now.toString();
 
-    // Publish frame as binary buffer directly (no base64 encoding)
-    // Use a simple header format: frameId|timestamp|frameSize|data
-    const header = `${frameId}|${new Date(now).toISOString()}|${frameData.length}|`;
-    const headerBuffer = Buffer.from(header, 'utf8');
-    const fullMessage = Buffer.concat([headerBuffer, frameData]);
+  // Publish frame as binary buffer directly (no base64 encoding)
+  const header = `${frameId}|${new Date(now).toISOString()}|${frameData.length}|`;
+  const headerBuffer = Buffer.from(header, 'utf8');
+  const fullMessage = Buffer.concat([headerBuffer, frameData]);
 
-    // Use setImmediate to prevent blocking
-    setImmediate(() => {
-      this.mqttClient.publish(
-        this.config.server.videoTopic,
-        fullMessage,
-        { qos: 0 },
-        (error) => {
-          this.publishQueue--;
-          if (error) {
-            console.error(`Publish error:`, error.message);
-          }
+  setImmediate(() => {
+    this.mqttClient.publish(
+      this.config.server.videoTopic,
+      fullMessage,
+      { qos: 0 },
+      (error) => {
+        this.publishQueue--;
+        if (error) {
+          console.error(`Publish error:`, error.message);
         }
-      );
-    });
+      }
+    );
+  });
+	
+ //   // Publish frame as binary buffer directly (no base64 encoding)
+ //   // Use a simple header format: frameId|timestamp|frameSize|data
+ //   const header = `${frameId}|${new Date(now).toISOString()}|${frameData.length}|`;
+ //   const headerBuffer = Buffer.from(header, 'utf8');
+ //   const fullMessage = Buffer.concat([headerBuffer, frameData]);
+
+ //   // Use setImmediate to prevent blocking
+ //   setImmediate(() => {
+ //     this.mqttClient.publish(
+ //       this.config.server.videoTopic,
+ //       fullMessage,
+ //       { qos: 0 },
+ //       (error) => {
+ //         this.publishQueue--;
+ //         if (error) {
+ //           console.error(`Publish error:`, error.message);
+ //         }
+ //       }
+ //     );
+ //   });
     
     this.frameCount++;
   }

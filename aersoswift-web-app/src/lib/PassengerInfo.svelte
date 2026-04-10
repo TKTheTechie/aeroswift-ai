@@ -12,6 +12,7 @@
   const PASSPORT_SERVICE_URL  = 'http://localhost:3003';
   const FACE_NO_MATCH_TOPIC   = 'aeroswift/passenger/unrecognized';
 
+  let { onNoMatch } = $props();
   let scanState = $state('idle');
   let flyerId = $state('');
   let passengerDetails = $state('');
@@ -55,6 +56,7 @@
         passengerDetails = '';
         passportScanState = 'idle';
         passportScanMessage = '';
+        onNoMatch();
       });
 
       // Agent mesh responded with passenger details
@@ -170,7 +172,6 @@
       </div>
 
     {:else if scanState === 'no_match'}
-      <!-- Unknown passenger — prompt passport scan -->
       <div class="w-full flex flex-col items-center gap-4 text-center">
         <div class="flex items-center gap-3 text-amber-600">
           <svg class="w-8 h-8 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -182,36 +183,9 @@
             <span class="text-sm text-amber-500 mt-1">Face detected but no matching passport found in database</span>
           </div>
         </div>
-
-        <!-- Scan Passport button only appears here -->
-        {#if passportScanState === 'idle'}
-          <button
-            onclick={startPassportScan}
-            class="flex items-center gap-2 bg-aero-teal text-white font-semibold text-sm px-6 py-3 rounded-xl hover:bg-aero-dark transition-colors shadow-md"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2" />
-            </svg>
-            Scan Passport to Enroll
-          </button>
-        {:else if passportScanState === 'scanning'}
-          <div class="flex items-center gap-2 text-aero-teal text-sm font-medium">
-            <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-              </path>
-            </svg>
-            Scanning passport — check terminal...
-          </div>
-        {:else if passportScanState === 'complete'}
-          <div class="text-green-600 text-sm font-medium">
-            ✅ Passport enrolled — please look at the camera again
-          </div>
-        {/if}
+        <span class="text-sm text-amber-600 font-medium">👉 Please scan your passport in the panel on the right</span>
       </div>
-
+      
     {:else if scanState === 'looking_up'}
       <!-- Match confirmed, agent mesh looking up passenger -->
       <div class="flex items-center gap-4">
