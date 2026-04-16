@@ -1,8 +1,9 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
-  import * as faceapi from '@vladmandic/face-api';
 
   let { onBack } = $props();
+
+  let faceapi = null;
 
   let videoEl = $state(null);
   let canvasEl = $state(null);
@@ -22,6 +23,7 @@
   async function loadModels() {
     try {
       loadingMessage = 'Loading face detection models...';
+      faceapi = await import('@vladmandic/face-api');
       await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
       modelsLoaded = true;
       loadingMessage = 'Starting camera...';
