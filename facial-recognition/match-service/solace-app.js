@@ -12,10 +12,10 @@ import { QdrantClient } from '@qdrant/js-client-rest';
 import { loadModels, getFaceEmbedding } from './face.js';
 import { connectSolace, publishToTopic } from './solace.js';
 
-const COLLECTION = process.env.QDRANT_COLLECTION || 'flyers';
+const COLLECTION     = process.env.QDRANT_COLLECTION       || 'flyers';
 const MATCH_THRESHOLD = parseFloat(process.env.MATCH_THRESHOLD) || 0.90;
-const RESULT_TOPIC = process.env.TOPIC_FACE_MATCH_RESULT || 'aeroswift/terminal1/v1/face/match/result';
-const ERROR_TOPIC = process.env.TOPIC_FACE_MATCH_ERROR || 'aeroswift/terminal1/v1/face/match/error';
+const RESULT_TOPIC   = process.env.FACE_MATCH_RESULT_TOPIC  || 'aeroswift/passenger/matched';
+const NO_MATCH_TOPIC = process.env.FACE_NO_MATCH_TOPIC      || 'aeroswift/passenger/unrecognized';
 
 const qdrant = new QdrantClient({ url: process.env.QDRANT_URL || 'http://localhost:6333' });
 
@@ -69,14 +69,15 @@ async function onMessage(msg) {
         result.matched = true;
         result.flyerId = best.payload?.flyerId;
         console.log(`✅ MATCH: flyerId=${result.flyerId}, confidence=${result.confidence}`);
+        publishToTopic(RESULT_TOPIC, result);
       } else {
         console.log(`❌ NO MATCH: confidence=${result.confidence}`);
+        publishToTopic(NO_MATCH_TOPIC, result);
       }
     } else {
       console.log('❌ NO MATCH: no results from Qdrant');
+      publishToTopic(NO_MATCH_TOPIC, result);
     }
-
-    publishToTopic(RESULT_TOPIC, result);
 
   } catch (err) {
     if (err.message === 'No face detected') {
