@@ -412,6 +412,15 @@ Recommended models:
 
 The ESP32 should serve MJPEG stream on `/stream` endpoint.
 
+### NFC Chip Reader (Passport Reader)
+
+Required for reading the NFC chip embedded in ICAO-compliant biometric passports.
+
+Recommended device:
+- **ACR122U** USB NFC reader (most common, well-supported by JMRTD)
+
+The reader must support **ISO 14443** (Type A/B) contactless smartcard protocols, which is the standard used by all modern biometric passports. The JMRTD Java library communicates with the reader via the PC/SC stack — ensure `pcscd` (Linux/macOS) or the built-in Windows SmartCard service is running before starting `passport_service.py`.
+
 ### Server Requirements
 
 **Camera Server**:
