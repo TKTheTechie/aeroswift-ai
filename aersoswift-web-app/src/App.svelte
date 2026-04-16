@@ -9,6 +9,7 @@
 
   let currentView = $state('splash');
   let showScanner = $state(false);
+  let WebcamFeed = $state(null);
 
   const solaceClient = new SolaceVideoClient(APP_CONFIG.solace);
 
@@ -28,7 +29,11 @@
     currentView = 'main';
   }
 
-  function handleWebcam() {
+  async function handleWebcam() {
+    if (!WebcamFeed) {
+      const mod = await import('./lib/WebcamFeed.svelte');
+      WebcamFeed = mod.default;
+    }
     currentView = 'webcam';
   }
 
@@ -43,7 +48,7 @@
 
 {#if currentView === 'splash'}
   <SplashScreen onEnter={handleEnter} onWebcam={handleWebcam} />
-{:else if currentView === 'webcam'}
+{:else if currentView === 'webcam' && WebcamFeed}
   <WebcamFeed onBack={() => currentView = 'splash'} />
 {:else}
   <div class="min-h-screen bg-gradient-to-br from-aero-bg via-white to-aero-bg flex flex-col">

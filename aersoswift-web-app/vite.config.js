@@ -13,5 +13,8 @@ expand(config({ path: resolve(__dirname, '../common-properties/.env') }));
 export default defineConfig({
   plugins: [svelte()],
   publicDir: 'static',
-  assetsInclude: ['**/*.glb', '**/*.gltf']
+  assetsInclude: ['**/*.glb', '**/*.gltf'],
+  optimizeDeps: {
+    exclude: ['@vladmandic/face-api']
+  }
 });
