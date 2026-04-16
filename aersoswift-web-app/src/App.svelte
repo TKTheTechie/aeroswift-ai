@@ -4,9 +4,25 @@
   import PassengerInfo from './lib/PassengerInfo.svelte';
   import PassportScanner from './lib/PassportScanner.svelte';
   import SplashScreen from './lib/SplashScreen.svelte';
+  import { SolaceVideoClient } from './lib/common/solace';
+  import { APP_CONFIG } from './lib/common/config';
 
-  let showSplash = $state(true);
+  let currentView = $state('splash');
   let showScanner = $state(false);
+
+  const solaceClient = new SolaceVideoClient(APP_CONFIG.solace);
+
+  onMount(async () => {
+    try {
+      await solaceClient.connect();
+    } catch (error) {
+      console.error('App: Failed to connect to Solace:', error);
+    }
+  });
+
+  onDestroy(() => {
+    solaceClient.disconnect();
+  });
 
   function handleEnter() {
     currentView = 'main';
@@ -55,7 +71,7 @@
       <!-- Camera row: ESP32 feed + optional passport scanner side by side -->
       <div class="flex gap-6 {showScanner ? 'flex-row' : 'flex-col'}">
         <div class="{showScanner ? 'w-1/2' : 'w-full'}">
-          <CameraFeed />
+          <CameraFeed {solaceClient} />
         </div>
 
         {#if showScanner}

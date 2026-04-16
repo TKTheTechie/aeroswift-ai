@@ -1,6 +1,8 @@
 <script>
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
+  import { SolaceVideoClient } from './common/solace';
   import {
+    APP_CONFIG,
     FACE_MATCH_REQUEST_TOPIC,
     FACE_MATCH_RESULT_TOPIC,
     FACE_MATCH_ERROR_TOPIC,
@@ -13,14 +15,19 @@
   let { onNoMatch } = $props();
   let scanState = $state('idle');
   let flyerId = $state('');
-  let passengerDetails = $state('');
+  let passengerInfo = $state('');
+  let flightInfo = $state('');
+  let flightStatus = $state('');
+  let recommendation = $state(null);
+  let airportMap = $state(null);
+  let errorMessage = $state('');
   let passportScanState = $state('idle'); // idle | scanning | complete | error
   let passportScanMessage = $state('');
   let passportPollInterval = null;
 
   const solaceClient = new SolaceVideoClient(APP_CONFIG.solace);
 
-  onMount(() => {
+  onMount(async () => {
     try {
       await solaceClient.connect();
 
@@ -174,8 +181,8 @@
           </path>
         </svg>
         <div class="flex flex-col">
-          <span class="text-base font-semibold text-gray-700">Face detected — verifying against passport database...</span>
-          <span class="text-sm text-gray-400 mt-1">🔍 Comparing live face with enrolled passport photo via vector search</span>
+          <span class="text-base font-semibold text-gray-700">Face detected — verifying against  database...</span>
+          <span class="text-sm text-gray-400 mt-1">🔍 Comparing live face with enrolled passengers</span>
         </div>
       </div>
 
