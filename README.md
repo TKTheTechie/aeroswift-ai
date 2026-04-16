@@ -5,7 +5,7 @@
   <img src="logo.jpg" alt="AeroSwift AI" width="200"/>
 </p>
 
-A complete real-time airport passenger recognition and boarding assistance system consisting of a camera streaming server with AI-powered people detection, a modern web application for displaying live feeds and passenger information, an event-driven AI agent mesh for passenger assistance, and a facial recognition service for automated passenger identification.
+A complete real-time airport passenger recognition and boarding assistance system consisting of a camera streaming server with AI-powered people detection, a modern web application for displaying live feeds and passenger information, an event-driven AI agent mesh for passenger assistance, a facial recognition service for automated passenger identification, and a passport reader for on-the-spot passenger enrollment via MRZ OCR and NFC chip reading.
 
 ## System Overview
 
@@ -15,6 +15,7 @@ This project provides an end-to-end solution for airport boarding operations:
 2. **Web Application**: Displays live camera feeds and passenger information in a modern, responsive interface
 3. **Agent Mesh**: Event-driven AI agents that provide personalized passenger assistance including flight rebooking, directions, and concierge services
 4. **Facial Recognition**: Enrolls and matches passenger faces using vector similarity search against a Qdrant database
+5. **Passport Reader**: Enrolls unknown passengers on the spot by reading the MRZ zone via OCR and the NFC chip via JMRTD, then publishing the verified identity to Solace and registering the face in the facial recognition service
 
 ## Architecture
 
@@ -32,21 +33,29 @@ This project provides an end-to-end solution for airport boarding operations:
 │  - Face & Emotion Detection │     │  - face-api.js embeddings    │
 │  - MQTT Publishing          │     └──────────────┬───────────────┘
 └────────┬────────────────────┘                    │ Cosine Search
-         │ Solace PubSub (MQTT)                    ▼
-         ▼                             ┌───────────────────────┐
-┌─────────────────────────────┐        │   Qdrant Vector DB    │
-│   Solace PubSub Broker      │        │   (Docker, port 6333) │
-│   (Message Router)          │        └───────────────────────┘
-└────────┬────────────────────┘
-         │ WebSocket / Event Triggers
-         ▼
+         │ Solace PubSub (MQTT)           ▲        ▼
+         ▼                                │  ┌───────────────────────┐
+┌─────────────────────────────┐           │  │   Qdrant Vector DB    │
+│   Solace PubSub Broker      │           │  │   (Docker, port 6333) │
+│   (Message Router)          │           │  └───────────────────────┘
+└────────┬────────────────────┘           │
+         │ WebSocket / Event Triggers      │ Enroll (base64 + flyerId)
+         ▼                                │
 ┌─────────────────────────────┐     ┌──────────────────────────────┐
-│   AeroSwift Web App         │     │   Agent Mesh (SAM)           │
-│   - Live Camera Feed        │     │  - Orchestrator Agent        │
-│   - Passenger Info          │     │  - AeroswiftOperations Agent │
-│   - People Analytics        │     │  - AeroswiftDB Agent         │
-└─────────────────────────────┘     │  - FDPS Agent                │
-                                    └──────────────────────────────┘
+│   AeroSwift Web App         │     │   Passport Reader            │
+│   - Live Camera Feed        │     │  - MRZ OCR (Tesseract)       │
+│   - Passenger Info          │◄───►│  - NFC Chip Read (JMRTD)     │
+│   - People Analytics        │     │  - Flask service (port 3003) │
+│   - PassportScanner UI      │     │  - Solace enrollment publish │
+└─────────────────────────────┘     └──────────────────────────────┘
+
+┌──────────────────────────────┐
+│   Agent Mesh (SAM)           │
+│  - Orchestrator Agent        │
+│  - AeroswiftOperations Agent │
+│  - AeroswiftDB Agent         │
+│  - FDPS Agent                │
+└──────────────────────────────┘
 ```
 
 ## Projects
@@ -130,15 +139,54 @@ Standalone face enrollment and matching demo using vector similarity search. Pas
 
 [View Facial Recognition Documentation →](./facial-recognition/README.md)
 
+### 5. Passport Reader (passport-reader)
+
+On-the-spot passenger enrollment pipeline triggered when the gate camera detects an unknown face. Combines webcam-based MRZ OCR with physical NFC chip reading to verify and register a passenger's identity.
+
+**Location**: `passport-reader/`
+
+**How it works**:
+1. The web app detects an unrecognized face and surfaces a `PassportScanner` panel
+2. The passenger holds their passport up to the webcam — Tesseract OCR extracts the Machine Readable Zone (two lines of ICAO TD-3 text containing passport number, DOB, expiry, name)
+3. The agent reads the NFC chip (via an ACR122U USB reader and JMRTD Java library) using the OCR data as the BAC key, retrieving the DG1 identity record and the DG2 facial photo
+4. OCR data is cross-validated against the NFC chip data; mismatches are flagged to the operator
+5. The extracted photo is base64-encoded and POSTed to the facial recognition enroll service (port 3001), storing a face embedding in Qdrant
+6. An enrollment event is published to Solace and a gate camera reset is triggered so the next face scan can match the newly enrolled passenger
+
+**Services**:
+- **Flask HTTP Service** (`passport_service.py`, port 3003): Browser-driven endpoints for the Svelte UI — `POST /ocr`, `POST /nfc`, `GET /nfc/status`, `POST /enroll`
+- **Standalone Script** (`complete_passport_reader.py`): Terminal-driven version of the same pipeline for offline testing
+
+**Key Features**:
+- Tesseract OCR with MRZ-tuned config (`--oem 3 --psm 6`, A-Z0-9< whitelist)
+- JMRTD-based NFC reading with Basic Access Control (BAC) key derivation
+- Field-level OCR vs NFC validation with operator override
+- PIL-based JPEG repair for truncated NFC photos
+- Non-blocking NFC read with server-sent status polling
+- Solace MQTT publish of `aeroswift/passenger/enrolled` on successful enrollment
+
+**Setup**:
+```bash
+cd passport-reader
+pip install opencv-python pytesseract flask flask-cors paho-mqtt Pillow requests
+# Also requires: Tesseract OCR, Java runtime, ACR122U NFC reader (or compatible)
+python passport_service.py   # Runs on port 3003
+```
+
+[View Passport Reader Documentation →](./passport-reader/README.MD)
+
 ## Quick Start
 
 ### Prerequisites
 
 - Node.js v18 or higher
-- Python 3.12+ (for Agent Mesh)
+- Python 3.12+ (for Agent Mesh and Passport Reader)
+- Java runtime (for Passport Reader NFC support)
 - Docker (for Qdrant vector database)
 - ESP32 camera module (or use demo mode)
 - Solace PubSub broker (cloud or local)
+- Tesseract OCR (for Passport Reader)
+- ACR122U USB NFC reader or compatible (for Passport Reader)
 
 ### 1. Configure shared environment
 
@@ -291,6 +339,20 @@ AEROSWIFT_DB_NAME=data/aeroswift.db
 - **QoS**: 1
 - **Publisher**: Web App
 - **Subscriber**: Camera Server
+
+### Passenger Enrolled Topic
+- **Topic**: `aeroswift/passenger/enrolled`
+- **Format**: JSON (`flyerId`, `enrolled`, `passportNumber`, `surname`, `givenNames`, `nationality`, `timestamp`)
+- **QoS**: 1
+- **Publisher**: Passport Reader (`passport_service.py`)
+- **Subscriber**: Web App / Agent Mesh
+
+### Face Scan Reset Topic
+- **Topic**: `aeroswift/terminal1/v1/face/scan/reset`
+- **Format**: JSON (`reset: true`, `flyerId`)
+- **QoS**: 1
+- **Publisher**: Passport Reader (after successful enrollment)
+- **Subscriber**: Camera Streaming Server (re-arms face matching for the newly enrolled passenger)
 
 ## Demo Mode
 
@@ -455,6 +517,7 @@ For issues and questions:
 - Web App: See [aersoswift-web-app/README.md](./aersoswift-web-app/README.md)
 - Agent Mesh: See [agent-mesh/README.md](./agent-mesh/README.md)
 - Facial Recognition: See [facial-recognition/README.md](./facial-recognition/README.md)
+- Passport Reader: See [passport-reader/README.MD](./passport-reader/README.MD)
 
 ## Contributing
 
