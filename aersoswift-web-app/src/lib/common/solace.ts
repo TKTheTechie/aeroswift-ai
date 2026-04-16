@@ -14,11 +14,11 @@ export class SolaceVideoClient {
   private sessionEventCb: any = null;
   private messageEventCb: any = null;
   private onFrameCallback?: (imageData: string) => void;
-  private topicCallbacks: Map<string, (payload: any) => void> = new Map();
+  private topicCallbacks: Map<string, Array<(payload: any) => void>> = new Map();
   private isConnected = false;
   private subscriptions: Set<string> = new Set();
   private demoInterval?: number;
-  private factoryInitialized = false;
+  private static factoryInitialized = false;
 
   constructor(private config: SolaceConfig) {
     // Initialize the solace client library
@@ -28,7 +28,7 @@ export class SolaceVideoClient {
   }
 
   private initializeSolaceFactory(): void {
-    if (this.factoryInitialized) {
+    if (SolaceVideoClient.factoryInitialized) {
       console.log('Solace factory already initialized');
       return;
     }
@@ -39,7 +39,7 @@ export class SolaceVideoClient {
       const factoryProps = new solace.SolclientFactoryProperties();
       factoryProps.profile = solace.SolclientFactoryProfiles.version10;
       solace.SolclientFactory.init(factoryProps);
-      this.factoryInitialized = true;
+      SolaceVideoClient.factoryInitialized = true;
       console.log('✅ Solace factory initialized');
     } catch (error: unknown) {
       console.error('❌ Failed to initialize Solace factory:', error);
@@ -163,12 +163,11 @@ export class SolaceVideoClient {
     }
     
     try {
-      // Subscribe to stream topic (all chunks in single message)
-      const streamTopic = solace.SolclientFactory.createTopicDestination(`${topic}/stream`);
-      this.session.subscribe(streamTopic, true, `${topic}/stream`, 10000);
-      this.subscriptions.add(`${topic}/stream`);
-      
-      console.log(`Subscribed to video stream topic: ${topic}/stream`);
+      const streamTopic = solace.SolclientFactory.createTopicDestination(topic);
+      this.session.subscribe(streamTopic, true, topic, 10000);
+      this.subscriptions.add(topic);
+
+      console.log(`Subscribed to video stream topic: ${topic}`);
     } catch (error: unknown) {
       console.error('Failed to subscribe to stream topic:', error);
     }
@@ -210,16 +209,20 @@ export class SolaceVideoClient {
     }
     
     try {
-      // Store the callback for this topic
-      this.topicCallbacks.set(topic, onMessage);
-      
-      console.log('Creating topic destination for:', topic);
-      const destination = solace.SolclientFactory.createTopicDestination(topic);
-      console.log('Topic destination created, subscribing...');
-      this.session.subscribe(destination, true, topic, 10000);
-      this.subscriptions.add(topic);
-      
-      console.log(`Subscribed to topic: ${topic}`);
+      // Add callback to the list for this topic
+      const existing = this.topicCallbacks.get(topic);
+      if (existing) {
+        existing.push(onMessage);
+      } else {
+        this.topicCallbacks.set(topic, [onMessage]);
+        // Only subscribe to Solace once per topic
+        console.log('Creating topic destination for:', topic);
+        const destination = solace.SolclientFactory.createTopicDestination(topic);
+        console.log('Topic destination created, subscribing...');
+        this.session.subscribe(destination, true, topic, 10000);
+        this.subscriptions.add(topic);
+        console.log(`Subscribed to topic: ${topic}`);
+      }
     } catch (error: unknown) {
       console.error('Failed to subscribe to topic:', error);
       console.error('Topic value was:', topic);
@@ -289,21 +292,23 @@ export class SolaceVideoClient {
       const binaryAttachment = message.getBinaryAttachment();
       if (!binaryAttachment) return;
 
-      // Check if there's a callback registered for this specific topic
-      const topicCallback = this.topicCallbacks.get(topic);
-      if (topicCallback) {
+      // Check if there are callbacks registered for this specific topic
+      const topicCallbacks = this.topicCallbacks.get(topic);
+      if (topicCallbacks && topicCallbacks.length > 0) {
+        let payload: any = null;
         try {
-          const payload = JSON.parse(binaryAttachment);
+          payload = JSON.parse(binaryAttachment);
           console.log(`Received message on topic ${topic}:`, payload);
-          topicCallback(payload);
-          return;
-        } catch (error) {
-          console.error(`Failed to parse message payload for topic ${topic}:`, error);
+        } catch {
+          // Payload is not JSON (e.g. large binary attachment) — callbacks still fire with null
+          console.log(`Non-JSON message received on topic ${topic}, invoking callbacks with null payload`);
         }
+        topicCallbacks.forEach(cb => cb(payload));
+        return;
       }
 
-      // Handle video stream messages
-      if (topic.endsWith('/stream')) {
+      // Handle video stream messages (topics registered via subscribe(), not subscribeToTopic())
+      if (this.onFrameCallback && !this.topicCallbacks.has(topic)) {
         // Try to parse as JSON first (for inactive messages)
         try {
           const payload = JSON.parse(binaryAttachment);
@@ -441,14 +446,13 @@ export class SolaceVideoClient {
     }
 
     try {
-      // Unsubscribe from stream topic
-      const streamTopic = solace.SolclientFactory.createTopicDestination(`${topic}/stream`);
-      if (this.subscriptions.has(`${topic}/stream`)) {
-        this.session.unsubscribe(streamTopic, true, `${topic}/stream`, 10000);
-        this.subscriptions.delete(`${topic}/stream`);
+      const streamTopic = solace.SolclientFactory.createTopicDestination(topic);
+      if (this.subscriptions.has(topic)) {
+        this.session.unsubscribe(streamTopic, true, topic, 10000);
+        this.subscriptions.delete(topic);
       }
-      
-      console.log(`Unsubscribed from video stream topic: ${topic}/stream`);
+
+      console.log(`Unsubscribed from video stream topic: ${topic}`);
     } catch (error: unknown) {
       console.error('Failed to unsubscribe from stream topic:', error);
     }

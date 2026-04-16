@@ -1,4 +1,5 @@
 <script>
+  import { onMount, onDestroy } from 'svelte';
   import CameraFeed from './lib/CameraFeed.svelte';
   import PassengerInfo from './lib/PassengerInfo.svelte';
   import PassportScanner from './lib/PassportScanner.svelte';
@@ -8,7 +9,11 @@
   let showScanner = $state(false);
 
   function handleEnter() {
-    showSplash = false;
+    currentView = 'main';
+  }
+
+  function handleWebcam() {
+    currentView = 'webcam';
   }
 
   function handleNoMatch() {
@@ -20,22 +25,24 @@
   }
 </script>
 
-{#if showSplash}
-  <SplashScreen onEnter={handleEnter} />
+{#if currentView === 'splash'}
+  <SplashScreen onEnter={handleEnter} onWebcam={handleWebcam} />
+{:else if currentView === 'webcam'}
+  <WebcamFeed onBack={() => currentView = 'splash'} />
 {:else}
   <div class="min-h-screen bg-gradient-to-br from-aero-bg via-white to-aero-bg flex flex-col">
     <!-- Header -->
     <header class="bg-white shadow-md border-b-4 border-aero-teal">
-      <div class="container mx-auto px-4 py-4 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="w-12 h-12 bg-gradient-to-br from-aero-teal to-aero-dark rounded-full flex items-center justify-center">
-            <span class="text-white text-2xl font-bold">✈</span>
+      <div class="container mx-auto px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <div class="flex items-center gap-2 shrink-0">
+          <div class="w-9 h-9 sm:w-12 sm:h-12 bg-gradient-to-br from-aero-teal to-aero-dark rounded-full flex items-center justify-center">
+            <span class="text-white text-lg sm:text-2xl font-bold">✈</span>
           </div>
-          <h1 class="text-3xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-aero-teal to-aero-dark">
+          <h1 class="text-xl sm:text-3xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-aero-teal to-aero-dark">
             AeroSwift AI
           </h1>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 ml-auto shrink-0">
           <div class="w-3 h-3 bg-aero-teal rounded-full animate-pulse"></div>
           <span class="text-sm font-medium text-gray-600">Live</span>
         </div>

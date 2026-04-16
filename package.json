@@ -1,0 +1,13 @@
+{
+  "name": "aeroswift-ai",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "node scripts/setup-env.js",
+    "start": "node scripts/setup-env.js && concurrently --names \"camera,web,face-match\" --prefix-colors \"cyan,green,magenta\" \"npm run start --prefix camera-streaming-server\" \"npm run dev --prefix aersoswift-web-app\" \"npm start --prefix facial-recognition/match-service\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}

@@ -140,45 +140,35 @@ Standalone face enrollment and matching demo using vector similarity search. Pas
 - ESP32 camera module (or use demo mode)
 - Solace PubSub broker (cloud or local)
 
-### 1. Setup Camera Streaming Server
+### 1. Configure shared environment
 
 ```bash
-cd camera-streaming-server
+cp common-properties/.env.example common-properties/.env
+# Edit common-properties/.env with your Solace broker credentials and topic names
+```
 
-# Install dependencies
-npm install
+### 2. Start all core services with one command
 
-# Install Python dependencies for YOLOv8
-pip install ultralytics
-
-# Export YOLOv8 model to ONNX format
-python export-yolo-model.py
-
-# Configure environment
-cp .env.example .env
-# Edit .env with your settings
-
-# Start the server
+```bash
+npm install   # install root tooling (first time only)
 npm start
 ```
 
-### 2. Setup Web Application
+This single command will:
+1. Copy each subproject's `.env.example` → `.env` (skipped if `.env` already exists)
+2. Run `npm install` in `camera-streaming-server`, `aersoswift-web-app`, and `facial-recognition/match-service`
+3. Start all three services concurrently with color-coded, labeled output:
+   - **camera** — Camera Streaming Server (`node server.js`)
+   - **web** — AeroSwift Web App (`vite --host 0.0.0.0`)
+   - **face-match** — Facial Recognition Match Service (`node solace-app.js`)
 
-```bash
-cd aersoswift-web-app
+### 3. Access the Application
 
-# Install dependencies
-npm install
+Open your browser to `http://localhost:5173` to view the web application.
 
-# Configure environment
-cp .env.example .env
-# Edit .env with your Solace settings
+---
 
-# Start development server
-npm run dev
-```
-
-### 3. Setup Agent Mesh (Optional)
+### Optional: Agent Mesh
 
 ```bash
 cd agent-mesh
@@ -191,16 +181,13 @@ sam init --skip
 cp .env_sample .env
 # Edit .env with your LLM endpoint and Solace credentials
 
-# Run in development (foreground)
-sam run
-
-# Or run in background
-nohup sam run &
+sam run          # foreground
+nohup sam run &  # background
 ```
 
 The Agent Mesh UI is available at `http://localhost:8000`.
 
-### 4. Setup Facial Recognition (Optional)
+### Optional: Facial Recognition — Enroll Passengers
 
 ```bash
 cd facial-recognition
@@ -214,10 +201,6 @@ docker run -d --name qdrant -p 6333:6333 qdrant/qdrant
 # Install and start enroll service
 cd enroll-service && npm install
 node index.js   # Runs on port 3001
-
-# In a new terminal, install and start match service
-cd ../match-service && npm install
-node index.js   # Runs on port 3002
 ```
 
 Enroll a passenger face:
@@ -235,10 +218,6 @@ curl -X POST http://localhost:3002/match \
   -H "Content-Type: application/json" \
   -d '{"imageBase64": "'"$IMAGE_B64"'"}'
 ```
-
-### 5. Access the Application
-
-Open your browser to `http://localhost:5173` to view the web application.
 
 ## Configuration
 

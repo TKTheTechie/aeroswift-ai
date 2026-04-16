@@ -42,53 +42,37 @@ apps:
       ##############################
       
       event_handlers: # List of handlers for incoming Solace messages
-        - name: "check_in_event"
+        - name: "face_match_workflow"
           subscriptions:
-            - topic: "abc/jira/issue/create/>"
+            - topic: "aeroswift/terminal1/v1/face/match/result"
               qos: 1
-          input_expression: "template:This passenger has just checked in: {{json://input.payload}}"
+          target_workflow_name: "CheckInWorkflow"
+          input_expression: "input.payload"
           payload_encoding: "utf-8"
           payload_format: "json"
-          on_success: "success_response_handler"
+          on_success: "workflow_success_handler"
           on_error: "error_response_handler"
-          user_identity_expression: "input.user_properties:initiator_id" # Optional
-          default_user_identity: "anonymous_event_mesh_user" # If no identity from event
-          target_agent_name: "OrchestratorAgent" # Static target agent
-          # target_agent_name_expression: "input.user_properties:target_agent" # Or dynamic
-          forward_context: # Optional: Forward data from input to output handlers
-            correlation_id: "input.user_properties:correlation_id" # Example: forward a correlation ID
+          default_user_identity: "anonymous_event_mesh_user"
+          forward_context:
+            correlation_id: "input.user_properties:correlation_id"
 
       output_handlers: # Optional: List of handlers for publishing A2A responses
         - name: "success_response_handler"
           max_file_size_for_base64_bytes: 5242880 # 5MB limit for embedded files
-          topic_expression: "template:event_mesh/responses/{{text://user_data.forward_context:correlation_id}}"
+          topic_expression: "template:aeroswift/terminal1/v1/passenger/lookup/response"
           payload_expression: "task_response:text" # Use the simplified payload's text field
           payload_encoding: "utf-8"
           payload_format: "text"
-          # output_schema: # Optional: Embedded JSON schema for validation
-          #   type: "object"
-          #   properties:
-          #     processed_data: { "type": "string" }
-          #   required: ["processed_data"]
-          # on_validation_error: "log" # Or "drop"
+        - name: "workflow_success_handler"
+          topic_expression: "template:aeroswift/terminal1/v1/passenger/lookup/response"
+          payload_expression: "input.payload:structured_output"  # Extract structured_output field
+          payload_encoding: "utf-8"
+          payload_format: "json"
         - name: "error_response_handler"
           topic_expression: "template:event_mesh/errors/{{text://user_data.forward_context:correlation_id}}"
           payload_expression: "task_response:a2a_task_response.error" # Send the full error object
           payload_encoding: "utf-8"
           payload_format: "json"
-
-        - name: "image_description_response_handler"
-          topic_expression: "template:event_mesh/responses/image_description/{{text://user_data.forward_context:some_id}}"
-          payload_expression: "task_response:text"
-          payload_encoding: "utf-8"
-          payload_format: "text"
-
-  # Example of a second output handler, commented out
-  #       - name: "text_response_to_systemB"
-  #         topic_expression: "template:external/systemB/responses/{{text://task_response:id}}"
-  #         payload_expression: "task_response:status.message.parts.0.text" # Direct access
-  #         payload_encoding: "utf-8"
-  #         payload_format: "text"
 
       ############################
       # 1. UPDATE REQUIRED - END #

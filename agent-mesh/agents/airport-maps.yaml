@@ -3,7 +3,7 @@
 log:
   stdout_log_level: INFO
   log_file_level: INFO
-  log_file: logs/airport-maps.log
+  log_file: airport-maps.log
 
 # Shared SAM config
 !include ../shared_config.yaml
@@ -28,7 +28,9 @@ apps:
           1. Use the MCP tool to get the image from local storage
           2. Save that image to artifacts store as a .png
           3. Load the artifact and do image analysis
-          4. Always share the results with the requester
+          4. When asked for a map, create a JSON artifact with {"map-description": <description>, "map-location": <image_path>} 
+              where description is provided in an HTML format; and
+              where image_path is the full image path as found in the local directory.
 
       inject_system_purpose: true
       inject_response_format: true
@@ -55,11 +57,6 @@ apps:
               - -y
               - '@modelcontextprotocol/server-filesystem'
               - 'data/terminal_maps'
-          # connection_params:
-          #   type: stdio
-          #   command: "./node_modules/.bin/mcp-server-filesystem"
-          #   args:
-          #     - "data/terminal_maps"
         - tool_type: builtin
           tool_name: "describe_image"
           tool_config:
@@ -78,12 +75,15 @@ apps:
         - id: image_description
           name: Describe Images
           description: Analyzes airport map images
+        - id: image_edit
+          name: Edit Images
+          description: Edit airport maps to make certain points of interest more obvious
 
       agent_card_publishing: 
         interval_seconds: 10
       agent_discovery: 
         enabled: true
       inter_agent_communication:
-        allow_list: ["*"]
+        allow_list: [""]
 
         request_timeout_seconds: 600

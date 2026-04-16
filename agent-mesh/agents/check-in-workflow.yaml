@@ -51,31 +51,34 @@ apps:
           1. Looks up information on a passenger who has just checked in, including flight number
           2. Looks up that flight number to determine the flight status
           3. If the flight status is delayed or canceled, offer rebooking suggestions
+          4. If available, provide a map of the airport and provide information on where the lounges are
 
         input_schema:
           type: object
           properties:
-            value:
+            flyerId:
               type: string
               description: "The frequent flyer number to process"
-          required: [value]
+          required: [flyerId]
 
         output_schema:
           type: object
           properties:
-            result: {type: string}
-            handler: {type: string}
-            category: {type: string}
-          required: [result, handler, category]
+            passenger_info:  {type: string, description: "Passenger from loyalty lookup"}
+            flight-info:   {type: string, description: "Information on the passenger's flight"}
+            flight-status:   {type: string, description: "Current status of the passenger's flight"}
+            recommendation:  {type: string, description: "Rebooking suggestion based on flight status"}
+            airport-map: {type: string, description: "Lounge info based on departure airport"}
+          required: [passenger_info, flight_info, flight_status, airport-map]
 
-        nodes:
-          # Step 1: Get flight number and loyalty status
+        nodes:       
+          # Step 1: Get their flight number
           - id: get_flight
             type: agent
-            agent_name: "AeroswiftDB"
-            instruction: "Based on the frequent flyer number, determine what their flight number is"
+            agent_name: "FrequentFlyer"
+            instruction: "Based on the frequent flyer number, what is this member's flight?"
             input:
-              value: "{{workflow.input.value}}"
+              value: "{{workflow.input.flyerId}}"
 
           # Step 2: Get the flight status
           - id: get_status
@@ -84,20 +87,20 @@ apps:
             depends_on: [get_flight]
             instruction: "Get the flight status of the flight number"
             input:
-              value: "{{get_flight.output}}"
+              value: "{{get_flight.output.flight}}"
 
           # Step 3: Route based on flight status
           - id: route_by_status
             type: switch
             depends_on: [get_status]
             cases:
-              - condition: "'{{get_status.output}}' == 'active'"
+              - condition: "'{{get_status.output.status}}' == 'active'"
                 node: handle_happy
-              - condition: "'{{get_status.output}}' == 'on-time'"
+              - condition: "'{{get_status.output.status}}' == 'on-time'"
                 node: handle_happy
-              - condition: "'{{get_status.output}}' == 'delayed'"
+              - condition: "'{{get_status.output.status}}' == 'delayed'"
                 node: handle_rebook
-              - condition: "'{{get_status.output}}' == 'canceled'"
+              - condition: "'{{get_status.output.status}}' == 'canceled'"
                 node: handle_rebook
 
           # Branch: Handle the happy path
@@ -105,29 +108,37 @@ apps:
             type: agent
             agent_name: "AirportMaps"
             depends_on: [route_by_status]
-            instruction: "Where are the lounges in this airport?"
+            instruction: "Where are the lounges in the departure airport?"
             input:
-              value: "{{workflow.input.value}}"
+              value: "{{get_status.output.flight-info}}"
 
-          # Branch: Handle rebooking suggetion
+          # Branch: Handle rebooking suggestion
           - id: handle_rebook
             type: agent
             agent_name: "FlightInfo"
             depends_on: [route_by_status]
-            instruction: "Is there an alternative flight for this delayed/canceled one?"
+            instruction: "Is there an alternative flight for this one?"
             input:
-              value: "{{workflow.input.value}}"
+              value: "{{get_status.output.flight-info}}"
+
+          # Branch: Handle the happy path
+          - id: airport_map
+            type: agent
+            agent_name: "AirportMaps"
+            depends_on: [handle_rebook]
+            instruction: "Where are the lounges in the departure airport?"
+            input:
+              value: "{{get_status.output.flight-info}}"
 
         output_mapping:
-          result:
+          passenger_info: "{{get_flight.output.name}}"
+          flight_info: "{{get_status.output.flight-info}}"
+          flight_status:  "{{get_status.output.status}}"
+          recommendation: "{{handle_rebook.output}}"
+          airport_map: 
             coalesce:
-              - "{{handle_happy.output.result}}"
-              - "{{handle_rebook.output.result}}"
-          handler:
-            coalesce:
-              - "{{handle_happy.output.handler}}"
-              - "{{handle_rebook.output.handler}}"
-          category: "{{get_flight.output}}"
+              - "{{handle_happy.output}}"
+              - "{{airport_map.output}}"
 
         skills:
           - id: "conditional_processing"

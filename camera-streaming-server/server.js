@@ -53,7 +53,7 @@ class ESP32VideoStreamer {
         intervalMs: parseInt(process.env.DETECTION_INTERVAL_MS) || 2000,
         confidenceThreshold: parseFloat(process.env.DETECTION_CONFIDENCE_THRESHOLD) || 0.5,
         analyticsTopic: process.env.ANALYTICS_TOPIC || 'video/esp32/analytics',
-        faceMatchTopic: process.env.FACE_MATCH_TOPIC || 'aeroswift/face/match',
+        faceMatchTopic: process.env.TOPIC_FACE_MATCH_REQUEST || 'aeroswift/terminal1/v1/face/match/request',
         scanResetTopic: process.env.TOPIC_FACE_SCAN_RESET || 'aeroswift/terminal1/v1/face/scan/reset',
         modelType: process.env.FACE_MODEL_TYPE || 'yolov8n-face',
         enableEmotions: process.env.ENABLE_EMOTION_DETECTION === 'true'
@@ -336,7 +336,6 @@ class ESP32VideoStreamer {
               this.lastFrameTime = now;
 
               if (this.config.detection.enabled &&
-                  this.faceDetectionActive &&
                   now - this.lastDetectionTime >= this.config.detection.intervalMs) {
                 this.queueFrameForDetection(frame);
                 this.lastDetectionTime = now;
@@ -523,24 +522,27 @@ class ESP32VideoStreamer {
           console.log(logMsg);
         });
 
-        const base64encoded = frameData.toString('base64');
-        const matchPayload = JSON.stringify({
-          imageBase64: base64encoded,
-          source: "camera-streaming-server",
-          timestamp: new Date().toISOString()
-        });
-        this.faceDetectionActive = false;
-        console.log(`Face detected — suspending detection until a reset is received on ${this.config.detection.scanResetTopic}`);
-        this.mqttClient.publish(
-          this.config.detection.faceMatchTopic,
-          matchPayload,
-          { qos: 1 },
-          (error) => {
-            if (error) {
-              console.error('Failed to publish face match payload:', error.message);
+        const highConfidenceFace = detections.find(d => d.confidence > 0.5);
+        if (highConfidenceFace && this.faceDetectionActive) {
+          const base64encoded = frameData.toString('base64');
+          const matchPayload = JSON.stringify({
+            imageBase64: base64encoded,
+            source: "camera-streaming-server",
+            timestamp: new Date().toISOString()
+          });
+          this.faceDetectionActive = false;
+          console.log(`Face detected with ${(highConfidenceFace.confidence * 100).toFixed(1)}% confidence — publishing to ${this.config.detection.faceMatchTopic} and suspending face match until reset`);
+          this.mqttClient.publish(
+            this.config.detection.faceMatchTopic,
+            matchPayload,
+            { qos: 1 },
+            (error) => {
+              if (error) {
+                console.error('Failed to publish face match payload:', error.message);
+              }
             }
-          }
-        );
+          );
+        }
       }
     } catch (error) {
       console.error('Detection error:', error.message);

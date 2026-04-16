@@ -2,9 +2,13 @@ requirements.txt
 .env
 .venv
 .sam
+*.whl
 *.db
 *.log
-logs/
+*.key
 configs/
 src/
 node_modules/
+artifacts/
+venv
+

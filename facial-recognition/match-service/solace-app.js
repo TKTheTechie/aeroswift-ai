@@ -80,7 +80,12 @@ async function onMessage(msg) {
     }
 
   } catch (err) {
-    console.error('❌ Error processing message:', err.message, { messageId });
-    throw err; // no ACK → redelivery
+    if (err.message === 'No face detected') {
+      console.warn(`⚠️ No face detected in message ${messageId}, publishing error`);
+      publishToTopic(ERROR_TOPIC, { error: 'No face detected', timestamp: new Date().toISOString(), messageId });
+    } else {
+      console.error('❌ Error processing message:', err.message, { messageId });
+      throw err; // no ACK → redelivery
+    }
   }
 }

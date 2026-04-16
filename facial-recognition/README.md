@@ -283,7 +283,45 @@ For production:
 
 ---
 
-## 15. License
+## 15. Solace Match-Service Event Payload
+
+The `match-service` listens on a Solace queue (`FACE_MATCH_QUEUE`, default: `FACE.MATCH.QUEUE`) and publishes results to the topic configured by `FACE_MATCH_RESULT_TOPIC` (default: `aeroswift/terminal1/v1/face/match/result`).
+
+### Payload format
+
+```json
+{
+  "timestamp": "2026-03-13T12:00:00.000Z",
+  "matched": true,
+  "flyerId": "F0004",
+  "confidence": 0.9553,
+  "messageId": "correlation-id-from-request"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `timestamp` | ISO 8601 string | UTC time the match was evaluated |
+| `matched` | boolean | `true` if best score ≥ `MATCH_THRESHOLD` (default 0.90) |
+| `flyerId` | string \| null | Qdrant point ID of the matched flyer; `null` when no match |
+| `confidence` | number | Cosine similarity score of the best candidate (0–1, 4 decimal places) |
+| `messageId` | string | Correlation ID copied from the incoming face-match request message |
+
+### No-match example
+
+```json
+{
+  "timestamp": "2026-03-13T12:00:01.000Z",
+  "matched": false,
+  "flyerId": null,
+  "confidence": 0.8412,
+  "messageId": "correlation-id-from-request"
+}
+```
+
+---
+
+## 16. License
 
 Demo / educational use.
 
