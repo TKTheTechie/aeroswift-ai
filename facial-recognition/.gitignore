@@ -4,3 +4,4 @@ dist/
 coverage/
 models/
 .DS_Store
+package-lock.json

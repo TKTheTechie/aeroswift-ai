@@ -1,4 +1,9 @@
 {
   "name": "facial-recognition-demo",
-  "private": true
+  "private": true,
+  "dependencies": {
+    "@qdrant/js-client-rest": "^1.17.0",
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
+  }
 }
