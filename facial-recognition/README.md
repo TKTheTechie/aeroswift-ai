@@ -1,4 +1,4 @@
-# Facial Recognition Demo (Enroll & Match Services)
+# Facial Recognition Demo (Enroll, Verification & Match Services)
 
 This project demonstrates **face recognition using vector similarity search** with:
 
