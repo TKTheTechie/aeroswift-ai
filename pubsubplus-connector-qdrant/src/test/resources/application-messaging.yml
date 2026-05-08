@@ -1,0 +1,40 @@
+spring:
+  cloud:
+    stream:
+      bindings:
+        input-0:
+          binder: solace
+          # Solace destination is dynamically set by PubSubPlusExtension
+        output-0:
+          binder: qdrant
+          destination: target-destination
+        input-1:
+          binder: qdrant
+          destination: source-destination
+        output-1:
+          binder: solace
+          # Solace destination is dynamically set by PubSubPlusExtension
+      solace:
+        default:
+          producer:
+            destination-type: queue
+      qdrant:
+        default:
+          consumer:
+            polling-interval: 200
+
+# solace connection properties are dynamically set by PubSubPlusExtension
+solace:
+  connector:
+    workflows:
+      0:
+        enabled: false
+      1:
+        enabled: false
+
+
+logging:
+  level:
+    root: info
+    com.solace.connector.core: DEBUG
+    com.solace.spring.cloud.stream.binder: DEBUG

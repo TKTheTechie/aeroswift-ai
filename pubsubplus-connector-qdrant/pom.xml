@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.solace.microintegration.core</groupId>
+		<artifactId>micro-integration-build-parent</artifactId>
+		<version>3.0.6</version>
+		<relativePath /> <!-- lookup parent from repository -->
+	</parent>
+
+	<groupId>com.solacecoe.connectors</groupId>
+        <artifactId>pubsubplus-connector-qdrant</artifactId>
+        <version>${revision}${sha1}${changelist}</version>
+
+        <name>pubsubplus-connector-qdrant</name>
+        <description>Solace - Qdrant Micro-Integration</description>
+        <inceptionYear>2026</inceptionYear>
+	<url/>
+
+	<organization>
+                <url>https://solace.com</url>
+                <name>Solace Corporation</name>
+        </organization>
+
+        <scm>
+                <url>https://github.com/SolaceTechCOE/pubsubplus-connector-qdrant.git</url>
+                <connection>scm:git:git@github.com:SolaceTechCOE/pubsubplus-connector-qdrant.git</connection>
+                <developerConnection>scm:git:git@github.com:SolaceTechCOE/pubsubplus-connector-qdrant.git</developerConnection>
+                <tag>HEAD</tag>
+        </scm>
+
+        <developers>
+                <developer>
+                        <email>info@solace.com</email>
+                        <name>Solace</name>
+                        <organization>Solace Corporation</organization>
+                        <organizationUrl>https://solace.com</organizationUrl>
+                </developer>
+        </developers>
+
+        <licenses>
+                <license>
+                        <name>Solace Community License v.1.0</name>
+                        <url>https://solace.com/license-community/</url>
+                        <distribution>repo</distribution>
+                </license>
+        </licenses>
+
+	<properties>
+                <!--
+                ===================================
+                Project Versioning Properties
+                ===================================
+                -->
+                <revision>1.0.0</revision>
+
+                <sha1/> <!-- Doesn't actually need to be a sha1, this is just another version modifier variable -->
+                <changelist>-SNAPSHOT</changelist>
+                <next-revision>${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.nextIncrementalVersion}</next-revision>
+
+                <!--
+                =========================
+                Compiler Properties
+                =========================
+                -->
+		<java.version>17</java.version>
+                <maven.compiler.source>17</maven.compiler.source>
+                <maven.compiler.target>17</maven.compiler.target>
+                <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+                <container.image.name>solace-pubsub-connector-qdrant</container.image.name>
+
+                <!--
+                ============================
+                Shared Resource Properties
+                ============================
+                 -->
+                <!-- Shared Resources: Licensing -->
+                <!-- Disabling Solace License resources and enabling Solace Community V1.0 resources -->
+                <shared-remote-resources.process.license-aggregate.solace-community-v1.skip>false</shared-remote-resources.process.license-aggregate.solace-community-v1.skip>
+                <shared-remote-resources.process.license-aggregate.solace.skip>true</shared-remote-resources.process.license-aggregate.solace.skip>
+
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.solace.connector.core</groupId>
+			<artifactId>pubsubplus-connector-framework</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>com.solacecoe.spring.cloud.stream.binders</groupId>
+			<artifactId>spring-cloud-stream-binder-qdrant</artifactId>
+			<version>1.0.0</version>
+		</dependency>
+
+                <dependency>
+                  <groupId>com.google.errorprone</groupId>
+                  <artifactId>error_prone_annotations</artifactId>
+                  <version>2.41.0</version>
+                </dependency>
+
+		<dependency>
+			<groupId>com.solace.spring.cloud</groupId>
+			<artifactId>spring-cloud-starter-stream-solace</artifactId>
+		</dependency>
+
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-oauth2-client</artifactId>
+		</dependency>
+
+		<!--
+		===============================================================
+		Developer Tool Dependencies (not packaged in final artifact)
+		===============================================================
+		 -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-configuration-processor</artifactId>
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-devtools</artifactId>
+			<optional>true</optional>
+		</dependency>
+
+		<!--
+		============================
+		Test Dependencies
+		============================
+		-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>com.vaadin.external.google</groupId>
+					<artifactId>android-json</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>com.solace.connector.core.test</groupId>
+			<artifactId>pubsubplus-connector-framework-test-support-utilities</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+	
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>parse-version</id>
+						<goals>
+							<goal>parse-version</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+
+			<!-- Best Practice: Flatten the POM to remove unnecessary information -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>flatten-maven-plugin</artifactId>
+				<version>1.7.1</version>
+				<configuration>
+					<updatePomFile>true</updatePomFile>
+					<flattenMode>oss</flattenMode>
+				</configuration>
+				<executions>
+					<!-- enable flattening -->
+					<execution>
+						<id>flatten</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>flatten</goal>
+						</goals>
+					</execution>
+					<!-- ensure proper cleanup -->
+					<execution>
+						<id>flatten.clean</id>
+						<goals>
+							<goal>clean</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.asciidoctor</groupId>
+				<artifactId>asciidoctor-maven-plugin</artifactId>
+				<configuration>
+					<skip>false</skip>
+					<attributes>
+						<!-- Add additional document attributes here (optional) -->
+					</attributes>
+				</configuration>
+			</plugin>
+			<!-- Version Management -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-scm-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>versions-maven-plugin</artifactId>
+			</plugin>
+
+			<!-- Code Quality Assurance -->
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-pmd-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>com.github.spotbugs</groupId>
+				<artifactId>spotbugs-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+                            <groupId>com.google.cloud.tools</groupId>
+                            <artifactId>jib-maven-plugin</artifactId>
+                            <version>3.4.4</version>
+                            <dependencies>
+                                <dependency>
+                                    <groupId>com.google.cloud.tools</groupId>
+                                    <artifactId>jib-layer-filter-extension-maven</artifactId>
+                                    <version>0.3.0</version>
+                                </dependency>
+                                <dependency>
+                                    <groupId>com.google.cloud.tools</groupId>
+                                    <artifactId>jib-spring-boot-extension-maven</artifactId>
+                                    <version>0.1.0</version>
+                                </dependency>
+                            </dependencies>
+                            <configuration>
+                                <from>
+                                    <image>${container.base-image.ref}</image>
+                                </from>
+                                <to>
+                                    <image>${container.repository.name}:${project.version}</image>
+                                </to>
+                                <container>
+                                    <args>
+                                        <arg>--spring.config.additional-location=optional:file:/app/external/spring/config/,optional:file:/app/external/spring/config/*/</arg>
+                                    </args>
+                                    <creationTime>${timestamp}</creationTime>
+                                    <extraClasspath>
+                                        <path>/app/external/classpath/</path>
+                                        <path>/app/external/libs/*</path>
+                                    </extraClasspath>
+                                    <ports>
+                                        <port>8090</port>
+                                    </ports>
+                                    <format>Docker</format>
+                                    <labels>
+                                        <name>${container.repository.name}</name>
+                                        <maintainer>${project.organization.name} support@solace.com</maintainer>
+                                        <vendor>${project.organization.name}</vendor>
+                                        <version>${project.version}</version>
+                                        <release>${project.version}</release>
+                                        <summary>${project.name}</summary>
+                                        <description>${project.description}</description>
+                                        <distribution-scope>public</distribution-scope>
+                                        <io.k8s.display-name>${project.name}</io.k8s.display-name>
+                                        <io.k8s.description>${project.description}</io.k8s.description>
+                                        <build-date>${timestamp}</build-date>
+                                        <vcs-type>git</vcs-type>
+                                        <vcs-ref>${scmVersion}</vcs-ref>
+                                        <url>${container.repository.url}</url>
+                                        <usage>${project.url}</usage>
+                                    </labels>
+                                </container>
+                                <extraDirectories>
+                                    <paths>
+                                        <path>
+                                            <from>${project.basedir}</from>
+                                            <into>/licenses</into>
+                                            <includes>LICENSE,LICENSE.pdf</includes>
+                                        </path>
+                                        <path>
+                                            <from>${container.build.extras.licenses.directory}</from>
+                                            <into>/licenses</into>
+                                            <includes>licenses.txt</includes>
+                                        </path>
+                                    </paths>
+                                </extraDirectories>
+                                <pluginExtensions>
+                                    <pluginExtension>
+                                        <implementation>com.google.cloud.tools.jib.maven.extension.springboot.JibSpringBootExtension</implementation>
+                                    </pluginExtension>
+                                    <pluginExtension>
+                                        <implementation>com.google.cloud.tools.jib.maven.extension.layerfilter.JibLayerFilterExtension</implementation>
+                                        <configuration implementation="com.google.cloud.tools.jib.maven.extension.layerfilter.Configuration">
+                                            <filters>
+                                                <!-- Excluded files -->
+                                                <filter>
+                                                    <glob>**/application-dev.properties</glob>
+                                                </filter>
+                                                <filter>
+                                                    <glob>**/application-dev.yml</glob>
+                                                </filter>
+                                                <filter>
+                                                    <glob>**/application-operator.yml</glob>
+                                                </filter>
+                                            </filters>
+                                        </configuration>
+                                    </pluginExtension>
+                                </pluginExtensions>
+                                <outputPaths>
+                                    <tar>${project.build.directory}/jib-output/${project.build.finalName}-image.tar</tar>
+                                    <digest>${project.build.directory}/jib-output/${project.build.finalName}-image.digest</digest>
+                                    <imageId>${project.build.directory}/jib-output/${project.build.finalName}-image.id</imageId>
+                                    <imageJson>${project.build.directory}/jib-output/${project.build.finalName}-image.json</imageJson>
+                                </outputPaths>
+                            </configuration>
+			</plugin>
+		</plugins>
+	</build>	
+
+	<distributionManagement>
+		<repository>
+			<id>github</id>
+			<name>GitHub Packages</name>
+			<url>https://maven.pkg.github.com/SolaceTechCOE/pubsubplus-connector-qdrant</url>
+		</repository>
+	</distributionManagement>
+</project>
