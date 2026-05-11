@@ -8,8 +8,8 @@
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 980px; margin: 30px auto; padding: 0 20px; background: #f8f9fa; }
     h1 { text-align: center; color: #2c3e50; margin-bottom: 8px; }
-    .logo-placeholder { text-align: center; margin-bottom: 10px; }
-    .logo-placeholder img { max-height: 140px; width: auto; }
+    .logo-placeholder { text-align: center; margin-bottom: 20px; }
+    .logo-placeholder img { max-height: 120px; width: auto; }
     .tabs { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 1.5rem; }
     .tab { flex: 1; padding: 14px; text-align: center; background: #eee; cursor: pointer; font-weight: 500; }
     .tab.active { background: white; border-bottom: 3px solid #0066cc; font-weight: 600; }
@@ -23,14 +23,12 @@
     .form-group { margin-bottom: 1.8rem; }
     label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
     input[type="text"], input[type="file"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
-    button { padding: 12px 20px; background: #0066cc; color: white; border: none; border-radius: 6px; cursor: pointer; margin-left: 8px; }
+    button { padding: 12px 20px; background: #0066cc; color: white; border: none; border-radius: 6px; cursor: pointer; }
     button:hover:not(:disabled) { background: #0055aa; }
     button:disabled { background: #aaa; cursor: not-allowed; }
-    button.reset { background: #6c757d; }
-    button.reset:hover { background: #5a6268; }
     .preview { max-width: 280px; max-height: 280px; border: 1px solid #ddd; border-radius: 6px; }
 
-    .preview-row { display: flex; align-items: flex-end; gap: 12px; margin-top: 12px; }
+    .preview-row { display: flex; align-items: flex-end; gap: 20px; margin-top: 12px; }
     .preview-row .preview-container { flex: 1; }
 
     .webcam-section { border: 3px dashed #ccc; padding: 15px; border-radius: 12px; margin-top: 12px; transition: all 0.3s ease; }
@@ -64,7 +62,7 @@
 <body>
 
 <div class="logo-placeholder">
-  <img src="aeroswift2.png" alt="Company Logo">
+  <img src="aeroswift.png" alt="Company Logo">
 </div>
 <h1>Flyer Enrol & Search</h1>
 
@@ -91,7 +89,6 @@
               <img id="enrolPreview" class="preview" style="display:none;" alt="preview"/>
             </div>
             <button type="button" id="enrolBtn" disabled>Enrol Flyer</button>
-            <button type="button" id="enrolResetBtn" class="reset">Reset</button>
           </div>
         </div>
 
@@ -142,7 +139,6 @@
               <img id="searchPreview" class="preview" style="display:none;" alt="preview"/>
             </div>
             <button type="button" id="searchBtn" disabled>Search / Match</button>
-            <button type="button" id="searchResetBtn" class="reset">Reset</button>
           </div>
         </div>
 
@@ -191,6 +187,11 @@
 
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.0/dist/face-api.min.js"></script>
 <script>
+// ====================== SHARED VARIABLES ======================
+let modelsLoaded = false;
+let currentStreamEnrol = null;
+let currentStreamSearch = null;
+
 // ====================== TAB SWITCHING ======================
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
@@ -201,7 +202,7 @@ document.querySelectorAll('.tab').forEach(tab => {
   });
 });
 
-// ====================== SHARED HELPERS ======================
+// ====================== COMMON HELPERS ======================
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -226,6 +227,7 @@ function updateProgress(tab, stepNumber, status) {
 }
 
 // ====================== ENROL TAB ======================
+// Upload
 document.getElementById('enrolImage').addEventListener('change', async e => {
   if (e.target.files[0]) {
     const reader = new FileReader();
@@ -245,6 +247,7 @@ document.getElementById('enrolImage').addEventListener('change', async e => {
   }
 });
 
+// Enrol Button
 document.getElementById('enrolBtn').addEventListener('click', async function() {
   const btn = this;
   btn.disabled = true;
@@ -287,18 +290,7 @@ document.getElementById('enrolBtn').addEventListener('click', async function() {
   }
 });
 
-// Reset button for Enrol (clears everything including Flyer ID)
-document.getElementById('enrolResetBtn').addEventListener('click', () => {
-  document.getElementById('enrolImage').value = '';
-  document.getElementById('enrolPreview').style.display = 'none';
-  document.getElementById('enrolForm').dataset.base64 = '';
-  document.getElementById('flyerId').value = '';
-  document.getElementById('enrolBtn').disabled = true;
-  resetProgressEnrol();
-  clearMessages('enrol');
-  stopCameraEnrol();
-});
-
+// Reset progress for Enrol
 function resetProgressEnrol() {
   const container = document.getElementById('enrolProgress');
   for (let i = 2; i <= 5; i++) {
@@ -311,6 +303,7 @@ function resetProgressEnrol() {
 }
 
 // ====================== SEARCH / MATCH TAB ======================
+// Upload
 document.getElementById('searchImage').addEventListener('change', async e => {
   if (e.target.files[0]) {
     const reader = new FileReader();
@@ -330,6 +323,7 @@ document.getElementById('searchImage').addEventListener('change', async e => {
   }
 });
 
+// Search Button
 document.getElementById('searchBtn').addEventListener('click', async function() {
   const btn = this;
   btn.disabled = true;
@@ -367,17 +361,7 @@ document.getElementById('searchBtn').addEventListener('click', async function() 
   }
 });
 
-// Reset button for Search
-document.getElementById('searchResetBtn').addEventListener('click', () => {
-  document.getElementById('searchImage').value = '';
-  document.getElementById('searchPreview').style.display = 'none';
-  document.getElementById('searchForm').dataset.base64 = '';
-  document.getElementById('searchBtn').disabled = true;
-  resetProgressSearch();
-  clearMessages('search');
-  stopCameraSearch();
-});
-
+// Reset progress for Search
 function resetProgressSearch() {
   const container = document.getElementById('searchProgress');
   for (let i = 2; i <= 3; i++) {
@@ -389,11 +373,7 @@ function resetProgressSearch() {
   }
 }
 
-// ====================== WEBCAM & FACE DETECTION ======================
-let modelsLoaded = false;
-let currentStreamEnrol = null;
-let currentStreamSearch = null;
-
+// ====================== WEBCAM & FACE DETECTION (Enrol) ======================
 async function loadModels() {
   console.log("🔄 Loading face detection models...");
   const status = document.getElementById('enrolFaceStatus');
@@ -479,6 +459,7 @@ function stopCameraEnrol() {
   document.getElementById('enrolWebcamSection').classList.remove('good', 'bad');
 }
 
+// ====================== WEBCAM & FACE DETECTION (Search) ======================
 async function startCameraSearch() {
   if (!modelsLoaded) await loadModels();
   const video = document.getElementById('searchVideo');
@@ -551,7 +532,7 @@ function stopCameraSearch() {
   document.getElementById('searchWebcamSection').classList.remove('good', 'bad');
 }
 
-// Webcam buttons
+// ====================== WEBCAM BUTTONS ======================
 document.getElementById('enrolStartBtn').addEventListener('click', startCameraEnrol);
 document.getElementById('enrolStopBtn').addEventListener('click', stopCameraEnrol);
 document.getElementById('enrolCaptureBtn').addEventListener('click', () => {
@@ -586,22 +567,6 @@ document.getElementById('searchCaptureBtn').addEventListener('click', () => {
   resetProgressSearch();
   updateProgress('search', 1, 'completed');
   clearMessages('search');
-});
-
-// Spacebar shortcut
-document.addEventListener('keydown', (e) => {
-  if (e.key === ' ' || e.key === 'Spacebar') {
-    e.preventDefault();
-    const enrolActive = document.getElementById('enrol').classList.contains('active');
-    const searchActive = document.getElementById('search').classList.contains('active');
-    if (enrolActive) {
-      const btn = document.getElementById('enrolCaptureBtn');
-      if (!btn.disabled) btn.click();
-    } else if (searchActive) {
-      const btn = document.getElementById('searchCaptureBtn');
-      if (!btn.disabled) btn.click();
-    }
-  }
 });
 
 // ====================== STAGE MODALS ======================
@@ -639,7 +604,7 @@ function hideModal() {
   document.getElementById('stageModal').style.display = 'none';
 }
 
-// ====================== POLL VERIFICATION ======================
+// ====================== POLL VERIFICATION (Enrol) ======================
 async function pollVerification(flyerId) {
   const maxAttempts = 25;
   let attempts = 0;
@@ -668,6 +633,22 @@ async function pollVerification(flyerId) {
   };
   poll();
 }
+
+// Spacebar
+document.addEventListener('keydown', (e) => {
+  if (e.key === ' ' || e.key === 'Spacebar') {
+    e.preventDefault();
+    const enrolActive = document.getElementById('enrol').classList.contains('active');
+    const searchActive = document.getElementById('search').classList.contains('active');
+    if (enrolActive) {
+      const btn = document.getElementById('enrolCaptureBtn');
+      if (!btn.disabled) btn.click();
+    } else if (searchActive) {
+      const btn = document.getElementById('searchCaptureBtn');
+      if (!btn.disabled) btn.click();
+    }
+  }
+});
 
 </script>
 </body>
