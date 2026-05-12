@@ -225,6 +225,28 @@ function updateProgress(tab, stepNumber, status) {
   }
 }
 
+function resetProgressEnrol() {
+  const container = document.getElementById('enrolProgress');
+  for (let i = 2; i <= 5; i++) {
+    const step = container.querySelector(`[data-step="${i}"]`);
+    if (step) {
+      step.classList.remove('completed');
+      step.classList.add('pending');
+    }
+  }
+}
+
+function resetProgressSearch() {
+  const container = document.getElementById('searchProgress');
+  for (let i = 2; i <= 3; i++) {
+    const step = container.querySelector(`[data-step="${i}"]`);
+    if (step) {
+      step.classList.remove('completed');
+      step.classList.add('pending');
+    }
+  }
+}
+
 // ====================== ENROL TAB ======================
 document.getElementById('enrolImage').addEventListener('change', async e => {
   if (e.target.files[0]) {
@@ -245,16 +267,33 @@ document.getElementById('enrolImage').addEventListener('change', async e => {
   }
 });
 
+// NEW PRE-CHECK LOGIC ON ENROL BUTTON
 document.getElementById('enrolBtn').addEventListener('click', async function() {
   const btn = this;
   btn.disabled = true;
   clearMessages('enrol');
 
   try {
+    const flyerId = document.getElementById('flyerId').value.trim();
+    if (!flyerId) throw new Error("Flyer ID is required");
+
+    // === PRE-CHECK: Verify if flyerId already exists ===
+    const verifyRes = await fetch(`http://localhost:3003/verify/${flyerId}`);
+    const verifyData = await verifyRes.json();
+
+    if (verifyData.enrolled === true) {
+      document.getElementById('enrolError').innerHTML = `
+        <strong>Flyer ID already exists!</strong><br>
+        This Flyer ID is already registered in Qdrant.<br>
+        Please use a different Flyer ID.
+      `;
+      document.getElementById('enrolError').style.display = 'block';
+      return; // STOP - do not call enroll API
+    }
+
+    // === If not registered, proceed with enroll ===
     const base64 = document.getElementById('enrolForm').dataset.base64;
     if (!base64) throw new Error("No image captured or uploaded");
-
-    const flyerId = document.getElementById('flyerId').value.trim();
 
     updateProgress('enrol', 2, 'completed');
 
@@ -298,17 +337,6 @@ document.getElementById('enrolResetBtn').addEventListener('click', () => {
   clearMessages('enrol');
   stopCameraEnrol();
 });
-
-function resetProgressEnrol() {
-  const container = document.getElementById('enrolProgress');
-  for (let i = 2; i <= 5; i++) {
-    const step = container.querySelector(`[data-step="${i}"]`);
-    if (step) {
-      step.classList.remove('completed');
-      step.classList.add('pending');
-    }
-  }
-}
 
 // ====================== SEARCH / MATCH TAB ======================
 document.getElementById('searchImage').addEventListener('change', async e => {
