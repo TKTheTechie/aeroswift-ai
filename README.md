@@ -1,4 +1,3 @@
-
 # AeroSwift AI - Airport Passenger Recognition System
 
 <p align="center">
@@ -29,26 +28,25 @@ This project provides an end-to-end solution for airport boarding operations:
 ┌─────────────────────────────┐     ┌──────────────────────────────┐
 │  Camera Streaming Server    │     │   Facial Recognition         │
 │  - Frame Processing         │     │  - Enroll Service (port 3001)│
-│  - YOLOv8 People Detection  │     │  - Match Service (port 3002) │
-│  - Face & Emotion Detection │     │  - face-api.js embeddings    │
-│  - MQTT Publishing          │     └──────────────┬───────────────┘
-└────────┬────────────────────┘                    │ Cosine Search
-         │ Solace PubSub (MQTT)           ▲        ▼
-         ▼                                │  ┌───────────────────────┐
-┌─────────────────────────────┐           │  │   Qdrant Vector DB    │
-│   Solace PubSub Broker      │           │  │   (Docker, port 6333) │
-│   (Message Router)          │           │  └───────────────────────┘
-└────────┬────────────────────┘           │
-         │ WebSocket / Event Triggers      │ Enroll (base64 + flyerId)
-         ▼                                │
+│  - YOLOv8 Face Detection    │     │  - Match Service (port 3002) │
+│  - MQTT Publishing          │     │  - face-api.js embeddings    │
+└────────┬────────────────────┘     └──────────────┬───────────────┘
+         │ Solace PubSub (MQTT)           ▲        │ Cosine Search
+         ▼                                │        ▼
+┌─────────────────────────────┐           │  ┌───────────────────────┐
+│   Solace PubSub Broker      │           │  │   Qdrant Vector DB    │
+│   (Message Router)          │           │  │   (Docker, port 6333) │
+└────────┬────────────────────┘           │  └───────────────────────┘
+         │ WebSocket / Event Triggers      │
+         ▼                                │ Enroll (base64 + flyerId)
 ┌─────────────────────────────┐     ┌──────────────────────────────┐
 │   AeroSwift Web App         │     │   Passport Reader            │
 │   - Live Camera Feed        │     │  - MRZ OCR (Tesseract)       │
 │   - Passenger Info          │◄───►│  - NFC Chip Read (JMRTD)     │
-│   - People Analytics        │     │  - Flask service (port 3003) │
-│   - PassportScanner UI      │     │  - Solace enrollment publish │
+│   - PassportScanner UI      │     │  - Flask service (port 3003) │
 └─────────────────────────────┘     └──────────────────────────────┘
-
+         │
+         ▼ Solace PubSub
 ┌──────────────────────────────┐
 │   Agent Mesh (SAM)           │
 │  - Orchestrator Agent        │
@@ -64,7 +62,7 @@ This project provides an end-to-end solution for airport boarding operations:
 
 Node.js server that connects to ESP32 cameras and provides:
 - Real-time video frame processing and streaming
-- YOLOv8-based people detection and counting
+- YOLOv8-based face detection and counting
 - MQTT publishing via Solace PubSub
 - RESTful API for stream control
 - Frame rate limiting and optimization
@@ -192,10 +190,19 @@ python passport_service.py   # Runs on port 3003
 
 ```bash
 cp common-properties/.env.example common-properties/.env
-# Edit common-properties/.env with your Solace broker credentials and topic names
+# Edit common-properties/.env with your Solace broker credentials
 ```
 
-### 2. Start all core services with one command
+### 2. Start Qdrant
+
+```bash
+docker run -d --name qdrant -p 6333:6333 qdrant/qdrant
+curl -X PUT http://localhost:6333/collections/flyers \
+  -H "Content-Type: application/json" \
+  -d '{"vectors": {"size": 128, "distance": "Cosine"}}'
+```
+
+### 3. Start all core services with one command
 
 ```bash
 npm install   # install root tooling (first time only)
@@ -210,7 +217,21 @@ This single command will:
    - **web** — AeroSwift Web App (`vite --host 0.0.0.0`)
    - **face-match** — Facial Recognition Match Service (`node solace-app.js`)
 
-### 3. Access the Application
+### 4. Start Enroll Service (required for passport enrollment)
+
+```bash
+cd facial-recognition/enroll-service && node index.js
+```
+
+### 5. Start Passport Reader Service (optional — needed for unknown passenger enrollment)
+
+```bash
+cd passport-reader
+source nfc-env/bin/activate   # activate Python virtual environment
+python passport_service.py    # runs on port 3003
+```
+
+### 6. Access the Application
 
 Open your browser to `http://localhost:5173` to view the web application.
 
@@ -235,37 +256,81 @@ nohup sam run &  # background
 
 The Agent Mesh UI is available at `http://localhost:8000`.
 
-### Optional: Facial Recognition — Enroll Passengers
+---
 
-```bash
-cd facial-recognition
+## Topics and Message Flow
 
-# Start Qdrant vector database
-docker run -d --name qdrant -p 6333:6333 qdrant/qdrant
+All topic names are defined in `common-properties/.env.example` and loaded by each service at startup. The values below are the defaults.
 
-# Download face-api models
-./download-models.sh
+### Video Stream
+- **Topic**: `aeroswift/terminal1/v1/camera/stream`
+- **Publisher**: Camera Streaming Server
+- **Subscriber**: Web App
+- **Format**: Binary (`frameId|timestamp|frameSize|JPEG bytes`)
+- **QoS**: 0
 
-# Install and start enroll service
-cd enroll-service && npm install
-node index.js   # Runs on port 3001
-```
+### Camera Analytics
+- **Topic**: `aeroswift/terminal1/v1/camera/analytics`
+- **Publisher**: Camera Streaming Server
+- **Subscriber**: Web App
+- **Format**: JSON (face count, bounding boxes, confidence scores, frame dimensions)
+- **QoS**: 1
 
-Enroll a passenger face:
-```bash
-IMAGE_B64=$(base64 person.jpg | tr -d '\n')
-curl -X POST http://localhost:3001/enroll \
-  -H "Content-Type: application/json" \
-  -d '{"flyerId": "F0001", "imageBase64": "'"$IMAGE_B64"'"}'
-```
+### Face Match Request
+- **Topic**: `aeroswift/terminal1/v1/face/match/request`
+- **Publisher**: Camera Streaming Server
+- **Subscribers**: Web App (display), `FACE.MATCH.QUEUE` (processing)
+- **Format**: JSON (`imageBase64`, `source`, `timestamp`)
+- **QoS**: 1
+- **Note**: This topic must be added as a queue subscription on `FACE.MATCH.QUEUE` in the Solace broker so the match service receives face images.
 
-Match a face:
-```bash
-IMAGE_B64=$(base64 person_test.jpg | tr -d '\n')
-curl -X POST http://localhost:3002/match \
-  -H "Content-Type: application/json" \
-  -d '{"imageBase64": "'"$IMAGE_B64"'"}'
-```
+### Face Match Result
+- **Topic**: `aeroswift/terminal1/v1/face/match/result`
+- **Publisher**: Match Service
+- **Subscribers**: Web App, Agent Mesh Gateway
+- **Format**: JSON (`matched`, `flyerId`, `confidence`, `timestamp`, `messageId`)
+- **QoS**: 1
+
+### Face Match Error
+- **Topic**: `aeroswift/terminal1/v1/face/match/error`
+- **Publisher**: Match Service
+- **Subscriber**: Web App
+- **Format**: JSON (`error`, `timestamp`, `messageId`)
+- **QoS**: 1
+
+### Unrecognized Face
+- **Topic**: `aeroswift/passenger/unrecognized`
+- **Publisher**: Match Service
+- **Subscriber**: Web App
+- **Format**: JSON (`matched: false`, `flyerId: null`, `confidence`, `timestamp`)
+- **QoS**: 1
+
+### Face Scan Reset
+- **Topic**: `aeroswift/terminal1/v1/face/scan/reset`
+- **Publishers**: Web App (on load), Passport Reader Service (after enrollment)
+- **Subscriber**: Camera Streaming Server
+- **Format**: JSON (`reset: true`, `flyerId`, `timestamp`)
+- **QoS**: 1
+
+### Passenger Lookup Response
+- **Topic**: `aeroswift/terminal1/v1/passenger/lookup/response`
+- **Publisher**: Agent Mesh Gateway
+- **Subscriber**: Web App
+- **Format**: JSON (`passengerDetails`)
+- **QoS**: 1
+
+### Passenger Enrolled
+- **Topic**: `aeroswift/passenger/enrolled`
+- **Publisher**: Passport Reader Service
+- **Subscriber**: Agent Mesh Gateway
+- **Format**: JSON (`flyerId`, `enrolled`, `surname`, `givenNames`, `timestamp`)
+- **QoS**: 1
+
+### Queue: FACE.MATCH.QUEUE
+- **Type**: Durable queue
+- **Consumer**: Match Service (`solace-app.js`)
+- **Topic subscription**: `aeroswift/terminal1/v1/face/match/request`
+- **Purpose**: Guarantees at-least-once delivery of face images to the match service and ensures sequential processing.
 
 ## Configuration
 
@@ -286,24 +351,44 @@ Both projects require a Solace PubSub broker. You can:
 
 ### Environment Variables
 
-**Camera Server** (`.env`):
+All shared configuration lives in `common-properties/.env`. Each subproject loads it automatically via `dotenv-expand`. Project-specific `.env` files may override any value.
+
+**`common-properties/.env`**:
 ```env
-SOLACE_MQTT_HOST=tcp://localhost:1883
-ESP32_CAMERA_IP=192.168.1.100
-ENABLE_PEOPLE_DETECTION=true
-DETECTION_INTERVAL_MS=2000
-MAX_FPS=10
+SOLACE_HOST=localhost
+SOLACE_WS_PORT=8008
+SOLACE_MQTT_PORT=1883
+SOLACE_VPN=default
+SOLACE_USERNAME=default
+SOLACE_PASSWORD=default
+
+TOPIC_VIDEO_FEED=aeroswift/terminal1/v1/camera/stream
+TOPIC_ANALYTICS=aeroswift/terminal1/v1/camera/analytics
+TOPIC_FACE_MATCH_REQUEST=aeroswift/terminal1/v1/face/match/request
+TOPIC_FACE_MATCH_RESULT=aeroswift/terminal1/v1/face/match/result
+TOPIC_FACE_MATCH_ERROR=aeroswift/terminal1/v1/face/match/error
+TOPIC_FACE_SCAN_RESET=aeroswift/terminal1/v1/face/scan/reset
+TOPIC_PASSENGER_LOOKUP_RESPONSE=aeroswift/terminal1/v1/passenger/lookup/response
 ```
 
-**Web App** (`.env`):
+**Camera Server** (`camera-streaming-server/.env`):
 ```env
-VITE_SOLACE_URL=ws://localhost:8008
-VITE_SOLACE_VPN=default
-VITE_VIDEO_TOPIC=aeroswift/camera/feed
+ESP32_CAMERA_IP=192.168.40.169
+ESP32_STREAM_PORT=81
+ESP32_STREAM_PATH=/stream
+ENABLE_FACE_DETECTION=true
+DETECTION_INTERVAL_MS=2000
+DETECTION_CONFIDENCE_THRESHOLD=0.5
+FACE_MODEL_TYPE=yolov8n-face
+ENABLE_EMOTION_DETECTION=true
+```
+
+**Web App** (`aersoswift-web-app/.env`):
+```env
 VITE_DEMO_MODE=false
 ```
 
-**Agent Mesh** (`.env`):
+**Agent Mesh** (`agent-mesh/.env`):
 ```env
 LLM_SERVICE_ENDPOINT=""
 LLM_SERVICE_API_KEY=""
@@ -312,58 +397,15 @@ SOLACE_BROKER_URL=""
 SOLACE_BROKER_VPN=""
 SOLACE_BROKER_USERNAME=""
 SOLACE_BROKER_PASSWORD=""
-SOLACE_DEV_MODE=false   # Set to true to run without a Solace broker
+SOLACE_DEV_MODE=false
 AEROSWIFT_DB_TYPE=sqlite
 AEROSWIFT_DB_NAME=data/aeroswift.db
 ```
 
-## Topics and Message Flow
-
-### Video Stream Topic
-- **Topic**: `aeroswift/camera/feed`
-- **Format**: Binary (frameId|timestamp|size|JPEG data)
-- **QoS**: 0 (best effort)
-- **Publisher**: Camera Server
-- **Subscriber**: Web App
-
-### Analytics Topic
-- **Topic**: `aeroswift/camera/analytics/gate1`
-- **Format**: JSON
-- **QoS**: 1 (at least once)
-- **Publisher**: Camera Server
-- **Subscriber**: Web App
-
-### Control Topic
-- **Topic**: `aeroswift/camera/control`
-- **Format**: JSON
-- **QoS**: 1
-- **Publisher**: Web App
-- **Subscriber**: Camera Server
-
-### Passenger Enrolled Topic
-- **Topic**: `aeroswift/passenger/enrolled`
-- **Format**: JSON (`flyerId`, `enrolled`, `passportNumber`, `surname`, `givenNames`, `nationality`, `timestamp`)
-- **QoS**: 1
-- **Publisher**: Passport Reader (`passport_service.py`)
-- **Subscriber**: Web App / Agent Mesh
-
-### Face Scan Reset Topic
-- **Topic**: `aeroswift/terminal1/v1/face/scan/reset`
-- **Format**: JSON (`reset: true`, `flyerId`)
-- **QoS**: 1
-- **Publisher**: Passport Reader (after successful enrollment)
-- **Subscriber**: Camera Streaming Server (re-arms face matching for the newly enrolled passenger)
-
 ## Demo Mode
 
-Both projects support demo mode for development without hardware:
-
-**Camera Server**: Publishes test patterns and simulated analytics
-**Web App**: Generates animated video feed and random people counts
-
-Enable demo mode by setting:
-- Camera Server: Run without ESP32 connection
-- Web App: `VITE_DEMO_MODE=true`
+**Web App**: Set `VITE_DEMO_MODE=true` to generate an animated video feed without a Solace connection.
+**Camera Server**: Run without ESP32 connection — the server will attempt to reconnect automatically.
 
 ## Development
 
@@ -406,11 +448,9 @@ npm run preview  # Test production build
 ### ESP32 Camera Module
 
 Recommended models:
-- ESP32-CAM
-- AI-Thinker ESP32-CAM
-- M5Stack Camera
+- ESP32-CAM (AI-Thinker)
 
-The ESP32 should serve MJPEG stream on `/stream` endpoint.
+The ESP32 should serve MJPEG stream on `/stream` endpoint (port 81) and still images on `/capture` (port 80).
 
 ### NFC Chip Reader (Passport Reader)
 
@@ -419,18 +459,7 @@ Required for reading the NFC chip embedded in ICAO-compliant biometric passports
 Recommended device:
 - **ACR122U** USB NFC reader (most common, well-supported by JMRTD)
 
-The reader must support **ISO 14443** (Type A/B) contactless smartcard protocols, which is the standard used by all modern biometric passports. The JMRTD Java library communicates with the reader via the PC/SC stack — ensure `pcscd` (Linux/macOS) or the built-in Windows SmartCard service is running before starting `passport_service.py`.
-
-### Server Requirements
-
-**Camera Server**:
-- CPU: 2+ cores (for YOLOv8 inference)
-- RAM: 2GB minimum, 4GB recommended
-- Network: Stable connection to ESP32 and Solace broker
-
-**Web App**:
-- Any static web server (Nginx, Apache, Vercel, Netlify)
-- Or serve via Node.js
+The reader must support **ISO 14443** (Type A/B) contactless smartcard protocols. The JMRTD Java library communicates with the reader via the PC/SC stack — ensure `pcscd` (Linux/macOS) or the built-in Windows SmartCard service is running before starting `passport_service.py`.
 
 ## Performance Optimization
 
@@ -438,24 +467,16 @@ The reader must support **ISO 14443** (Type A/B) contactless smartcard protocols
 
 Adjust in camera server `.env`:
 ```env
-MAX_FPS=10                    # Limit to 10 fps
-MIN_FRAME_INTERVAL_MS=100     # Or set interval directly
+MAX_FPS=10
+MIN_FRAME_INTERVAL_MS=100
 ```
 
 ### Detection Optimization
 
 ```env
-DETECTION_INTERVAL_MS=2000    # Run detection every 2 seconds
-YOLO_MODEL_SIZE=yolov8n       # Use smaller model for speed
-DETECTION_CONFIDENCE_THRESHOLD=0.5  # Adjust for accuracy vs speed
+DETECTION_INTERVAL_MS=2000
+DETECTION_CONFIDENCE_THRESHOLD=0.5
 ```
-
-### Network Optimization
-
-- Use QoS 0 for video frames (best effort)
-- Use QoS 1 for analytics (guaranteed delivery)
-- Enable compression on Solace broker
-- Use binary format for video (no base64 overhead)
 
 ## Troubleshooting
 
@@ -472,23 +493,29 @@ DETECTION_CONFIDENCE_THRESHOLD=0.5  # Adjust for accuracy vs speed
 - Check `models/` directory for .onnx file
 
 **Solace Connection Failed**:
-- Verify broker URL and credentials
+- Verify broker URL and credentials in `common-properties/.env`
 - Check firewall rules for MQTT port (1883)
-- Test with MQTT client (mosquitto_pub/sub)
 
 ### Web App Issues
 
 **Video Not Displaying**:
 - Check browser console for errors
-- Verify Solace WebSocket connection (port 8008)
-- Confirm video topic matches server configuration
-- Try demo mode to isolate issue
+- Verify Solace WebSocket connection
+- Confirm `TOPIC_VIDEO_FEED` matches between camera server and web app
+- Try `VITE_DEMO_MODE=true` to isolate issue
 
 **Build Errors**:
 ```bash
 rm -rf node_modules package-lock.json
 npm install
 ```
+
+### Passport Reader Issues
+
+**NFC read fails immediately**:
+- Make sure passport is flat on the reader
+- Check that `pcscd` is running: `sudo pcscd --foreground`
+- Verify the ACR122U is detected: `pcsc_scan`
 
 ## Monitoring
 
