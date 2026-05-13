@@ -92,6 +92,7 @@ Modern Svelte 5 web application that displays:
 - Real-time video streaming via Solace WebSocket
 - Responsive design with Tailwind CSS
 - Demo mode for development without hardware
+- **Webcam mode** (`VITE_WEBCAM_MODE=true`): uses the browser's built-in webcam as a camera source — captures frames on face detection and publishes them to Solace, enabling a full demo without an ESP32
 - Automatic reconnection handling
 - Custom airline-themed UI
 
@@ -139,13 +140,12 @@ Standalone face enrollment and matching demo using vector similarity search. Pas
 
 ### 5. Passport Reader (passport-reader)
 
-On-the-spot passenger enrollment pipeline triggered when the gate camera detects an unknown face. Combines webcam-based MRZ OCR with physical NFC chip reading to verify and register a passenger's identity.
+On-the-spot passenger enrollment pipeline. Combines webcam-based MRZ OCR with physical NFC chip reading to verify and register a passenger's identity, then stores a face embedding in Qdrant via the facial recognition enroll service.
 
 **Location**: `passport-reader/`
 
 **How it works**:
-1. The web app detects an unrecognized face and surfaces a `PassportScanner` panel
-2. The passenger holds their passport up to the webcam — Tesseract OCR extracts the Machine Readable Zone (two lines of ICAO TD-3 text containing passport number, DOB, expiry, name)
+1. An operator initiates enrollment — the passenger holds their passport up to the webcam — Tesseract OCR extracts the Machine Readable Zone (two lines of ICAO TD-3 text containing passport number, DOB, expiry, name)
 3. The agent reads the NFC chip (via an ACR122U USB reader and JMRTD Java library) using the OCR data as the BAC key, retrieving the DG1 identity record and the DG2 facial photo
 4. OCR data is cross-validated against the NFC chip data; mismatches are flagged to the operator
 5. The extracted photo is base64-encoded and POSTed to the facial recognition enroll service (port 3001), storing a face embedding in Qdrant
@@ -386,6 +386,7 @@ ENABLE_EMOTION_DETECTION=true
 **Web App** (`aersoswift-web-app/.env`):
 ```env
 VITE_DEMO_MODE=false
+VITE_WEBCAM_MODE=false   # set to true to use browser webcam instead of ESP32
 ```
 
 **Agent Mesh** (`agent-mesh/.env`):
@@ -404,7 +405,10 @@ AEROSWIFT_DB_NAME=data/aeroswift.db
 
 ## Demo Mode
 
-**Web App**: Set `VITE_DEMO_MODE=true` to generate an animated video feed without a Solace connection.
+**Web App (animated)**: Set `VITE_DEMO_MODE=true` to generate an animated video feed without a Solace connection.
+
+**Web App (webcam)**: Set `VITE_WEBCAM_MODE=true` to use the browser's webcam as the camera source. The `WebcamPublisher` component runs face detection via `@vladmandic/face-api` (TinyFaceDetector) at 500 ms intervals and publishes captured JPEG frames to the face match request topic over Solace. This mode works alongside a live Solace broker and facial recognition services, making it useful for demos without physical ESP32 hardware.
+
 **Camera Server**: Run without ESP32 connection — the server will attempt to reconnect automatically.
 
 ## Development

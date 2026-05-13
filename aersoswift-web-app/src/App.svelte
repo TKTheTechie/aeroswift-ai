@@ -1,15 +1,15 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
   import CameraFeed from './lib/CameraFeed.svelte';
+  import WebcamPublisher from './lib/WebcamPublisher.svelte';
   import PassengerInfo from './lib/PassengerInfo.svelte';
-  import PassportScanner from './lib/PassportScanner.svelte';
   import SplashScreen from './lib/SplashScreen.svelte';
   import { SolaceVideoClient } from './lib/common/solace';
-  import { APP_CONFIG } from './lib/common/config';
+  import { APP_CONFIG, WEBCAM_MODE } from './lib/common/config';
 
   let currentView = $state('splash');
-  let showScanner = $state(false);
   let WebcamFeed = $state(null);
+  let faceMatchPending = $state(false);
 
   const solaceClient = new SolaceVideoClient(APP_CONFIG.solace);
 
@@ -37,13 +37,6 @@
     currentView = 'webcam';
   }
 
-  function handleNoMatch() {
-    showScanner = true;
-  }
-
-  function handleEnrolled() {
-    showScanner = false;
-  }
 </script>
 
 {#if currentView === 'splash'}
@@ -73,20 +66,18 @@
     <!-- Main Content -->
     <main class="flex-1 container mx-auto px-4 py-6 flex flex-col gap-6">
 
-      <!-- Camera row: ESP32 feed + optional passport scanner side by side -->
-      <div class="flex gap-6 {showScanner ? 'flex-row' : 'flex-col'}">
-        <div class="{showScanner ? 'w-1/2' : 'w-full'}">
+      <div class="w-full">
+        {#if WEBCAM_MODE}
+          <WebcamPublisher {solaceClient}
+            onMatchRequest={() => faceMatchPending = true}
+            onMatchReset={() => faceMatchPending = false}
+          />
+        {:else}
           <CameraFeed {solaceClient} />
-        </div>
-
-        {#if showScanner}
-          <div class="w-1/2">
-            <PassportScanner onEnrolled={handleEnrolled} />
-          </div>
         {/if}
       </div>
 
-      <PassengerInfo onNoMatch={handleNoMatch} />
+      <PassengerInfo {faceMatchPending} onMatchReset={() => faceMatchPending = false} />
     </main>
   </div>
 {/if}

@@ -18,6 +18,7 @@ export class SolaceVideoClient {
   private isConnected = false;
   private subscriptions: Set<string> = new Set();
   private demoInterval?: number;
+  private webcamFrameCounter = 0;
   private static factoryInitialized = false;
 
   constructor(private config: SolaceConfig) {
@@ -424,6 +425,33 @@ export class SolaceVideoClient {
     } catch (error: unknown) {
       console.error('Failed to publish control message:', error);
     }
+  }
+
+  publishVideoFrame(topic: string, jpegBuffer: ArrayBuffer): void {
+    if (DEMO_MODE || !this.session || !this.isConnected || 'demo' in this.session) return;
+
+    try {
+      const frameId = String(this.webcamFrameCounter++);
+      const timestamp = String(Date.now());
+      const frameSize = String(jpegBuffer.byteLength);
+      const headerBytes = new TextEncoder().encode(`${frameId}|${timestamp}|${frameSize}|`);
+      const jpegBytes = new Uint8Array(jpegBuffer);
+      const combined = new Uint8Array(headerBytes.length + jpegBytes.length);
+      combined.set(headerBytes, 0);
+      combined.set(jpegBytes, headerBytes.length);
+
+      const message = solace.SolclientFactory.createMessage();
+      message.setDestination(solace.SolclientFactory.createTopicDestination(topic));
+      message.setBinaryAttachment(combined);
+      message.setDeliveryMode(solace.MessageDeliveryModeType.DIRECT);
+      (this.session as solace.Session).send(message);
+    } catch (error: unknown) {
+      console.error('Failed to publish video frame:', error);
+    }
+  }
+
+  publishAnalytics(topic: string, payload: any): void {
+    this.publishControl(topic, payload);
   }
 
   unsubscribe(topic: string): void {

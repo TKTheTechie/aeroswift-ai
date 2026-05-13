@@ -1,7 +1,7 @@
 <script>
   import { Canvas } from '@threlte/core';
   import Scene from './Scene.svelte';
-  import { DEMO_MODE } from './common/config';
+  import { DEMO_MODE, WEBCAM_MODE } from './common/config';
 
   let { onEnter, onWebcam } = $props();
   let isLoading = $state(true);
@@ -40,7 +40,7 @@
   <!-- Bottom Section - Buttons (Fixed at bottom) -->
   <div class="space-y-3 pb-6 px-6 text-center">
     <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
-      {#if DEMO_MODE}
+      {#if DEMO_MODE && !WEBCAM_MODE}
         <button
           onclick={onWebcam}
           class="group relative px-8 py-4 bg-white text-aero-dark font-bold text-lg rounded-full shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 hover:bg-aero-teal hover:text-white"
