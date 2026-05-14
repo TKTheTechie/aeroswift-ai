@@ -227,7 +227,7 @@ function updateProgress(tab, stepNumber, status) {
 
 function resetProgressEnrol() {
   const container = document.getElementById('enrolProgress');
-  for (let i = 2; i <= 5; i++) {
+  for (let i = 1; i <= 5; i++) {
     const step = container.querySelector(`[data-step="${i}"]`);
     if (step) {
       step.classList.remove('completed');
@@ -238,7 +238,7 @@ function resetProgressEnrol() {
 
 function resetProgressSearch() {
   const container = document.getElementById('searchProgress');
-  for (let i = 2; i <= 3; i++) {
+  for (let i = 1; i <= 3; i++) {
     const step = container.querySelector(`[data-step="${i}"]`);
     if (step) {
       step.classList.remove('completed');
@@ -692,6 +692,11 @@ function showStageModalSearch(step) {
 
   content.innerHTML = `<pre>${html}</pre>`;
   modal.style.display = 'flex';
+}
+
+// ====================== MODAL CLOSE FUNCTION (FIXED) ======================
+function hideModal() {
+  document.getElementById('stageModal').style.display = 'none';
 }
 
 // ====================== POLL VERIFICATION ======================
