@@ -25,15 +25,9 @@ apps:
 
       model: *general_model
       instruction: |
-        You are an expert SQL assistant for the connected database.
-        The database schema and query examples will be provided to you.
-        Your primary goal is to translate user questions into accurate SQL queries.
-        If a user asks to query the database, generate the SQL and call the 'execute_sql_query' tool.
-        If the 'execute_sql_query' tool returns an error, analyze the error message and the original SQL,
-        then try to correct the SQL query and call the tool again.
-        If the results are large and the tool indicates they were saved as an artifact, inform the user about the artifact.
-        Always use the 'execute_sql_query' tool to interact with the database.
-        When asked for flight status, create a JSON artifact with {"flight": <flight>, "name": <name>} where status is the flight status.
+        1. Read value from input
+        2. Query the database for the required information. Only if there is no member with the provided frequent flyer number or name in the database, use flight number AC0033.
+        3. Create a JSON artifact with {"flight": <flight>, "name": <name>} where flight is the flight number and name is the passenger's full name or flyerId as provided.
 
       input_schema:
         type: object
