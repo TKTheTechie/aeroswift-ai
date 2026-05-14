@@ -406,17 +406,6 @@ document.getElementById('searchResetBtn').addEventListener('click', () => {
   stopCameraSearch();
 });
 
-function resetProgressSearch() {
-  const container = document.getElementById('searchProgress');
-  for (let i = 2; i <= 3; i++) {
-    const step = container.querySelector(`[data-step="${i}"]`);
-    if (step) {
-      step.classList.remove('completed');
-      step.classList.add('pending');
-    }
-  }
-}
-
 // ====================== WEBCAM & FACE DETECTION ======================
 let modelsLoaded = false;
 let currentStreamEnrol = null;
