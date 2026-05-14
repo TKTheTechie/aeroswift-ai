@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Flyer Enrol & Search</title>
+  <title>Flyer Enroll & Search</title>
   <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.0/dist/face-api.min.js"></script>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 980px; margin: 30px auto; padding: 0 20px; background: #f8f9fa; }
@@ -66,10 +66,10 @@
 <div class="logo-placeholder">
   <img src="aeroswift2.png" alt="Company Logo">
 </div>
-<h1>Flyer Enrol & Search</h1>
+<h1>Flyer Enroll & Search</h1>
 
 <div class="tabs">
-  <div class="tab active" data-tab="enrol">Enrol</div>
+  <div class="tab active" data-tab="enrol">Enroll</div>
   <div class="tab" data-tab="search">Search / Match</div>
 </div>
 
@@ -90,7 +90,7 @@
             <div class="preview-container">
               <img id="enrolPreview" class="preview" style="display:none;" alt="preview"/>
             </div>
-            <button type="button" id="enrolBtn" disabled>Enrol Flyer</button>
+            <button type="button" id="enrolBtn" disabled>Enroll Flyer</button>
             <button type="button" id="enrolResetBtn" class="reset">Reset</button>
           </div>
         </div>
@@ -120,8 +120,8 @@
       <h3 style="margin-top:0;">Enrolment Progress</h3>
       <div class="stepper" id="enrolProgress">
         <div class="step pending" data-step="1" onclick="showStageModal(1)"><div class="step-circle">1</div><div class="step-label">Upload/Capture Image</div></div>
-        <div class="step pending" data-step="2" onclick="showStageModal(2)"><div class="step-circle">2</div><div class="step-label">Enrol Request Sent</div></div>
-        <div class="step pending" data-step="3" onclick="showStageModal(3)"><div class="step-circle">3</div><div class="step-label">Enrol Request Queued</div></div>
+        <div class="step pending" data-step="2" onclick="showStageModal(2)"><div class="step-circle">2</div><div class="step-label">Enroll Request Sent</div></div>
+        <div class="step pending" data-step="3" onclick="showStageModal(3)"><div class="step-circle">3</div><div class="step-label">Enroll Request Queued</div></div>
         <div class="step pending" data-step="4" onclick="showStageModal(4)"><div class="step-circle">4</div><div class="step-label">Waiting for Verification</div></div>
         <div class="step pending" data-step="5" onclick="showStageModal(5)"><div class="step-circle">5</div><div class="step-label">Enrolled</div></div>
       </div>
@@ -278,7 +278,7 @@ document.getElementById('enrolBtn').addEventListener('click', async function() {
     if (!flyerId) throw new Error("Flyer ID is required");
 
     // === PRE-CHECK: Verify if flyerId already exists ===
-    const verifyRes = await fetch(`http://localhost:3003/verify/${flyerId}`);
+    const verifyRes = await fetch(`/verify/${flyerId}`);
     const verifyData = await verifyRes.json();
 
     if (verifyData.enrolled === true) {
@@ -297,7 +297,7 @@ document.getElementById('enrolBtn').addEventListener('click', async function() {
 
     updateProgress('enrol', 2, 'completed');
 
-    const response = await fetch('http://localhost:3001/enroll', {
+    const response = await fetch('/enroll', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ flyerId, imageBase64: base64 })
@@ -308,7 +308,7 @@ document.getElementById('enrolBtn').addEventListener('click', async function() {
     updateProgress('enrol', 3, 'completed');
 
     document.getElementById('enrolResult').innerHTML = `
-      <strong>Enrol Response:</strong><br>
+      <strong>Enroll Response:</strong><br>
       <pre style="background:#f4f4f4;padding:12px;border-radius:6px;overflow:auto;">${JSON.stringify(data, null, 2)}</pre>
     `;
     document.getElementById('enrolResult').style.display = 'block';
@@ -326,7 +326,7 @@ document.getElementById('enrolBtn').addEventListener('click', async function() {
   }
 });
 
-// Reset button for Enrol (clears everything including Flyer ID)
+// Reset button for Enroll (clears everything including Flyer ID)
 document.getElementById('enrolResetBtn').addEventListener('click', () => {
   document.getElementById('enrolImage').value = '';
   document.getElementById('enrolPreview').style.display = 'none';
@@ -369,7 +369,7 @@ document.getElementById('searchBtn').addEventListener('click', async function() 
 
     updateProgress('search', 2, 'completed');
 
-    const response = await fetch('http://localhost:3002/match', {
+    const response = await fetch('/match', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ imageBase64: base64 })
@@ -449,11 +449,11 @@ async function startCameraEnrol() {
     stopBtn.disabled = false;
 
     setTimeout(() => {
-      console.log("🚀 Starting face detection loop (Enrol)");
+      console.log("🚀 Starting face detection loop (Enroll)");
       runFaceDetectionEnrol(video, statusDiv, captureBtn, webcamSection);
     }, 1200);
   } catch (err) {
-    console.error("❌ Webcam error (Enrol):", err);
+    console.error("❌ Webcam error (Enroll):", err);
   }
 }
 
@@ -473,7 +473,8 @@ function runFaceDetectionEnrol(video, statusDiv, captureBtn, webcamSection) {
       const avgEyeHeight = (leftEyeHeight + rightEyeHeight) / 2;
       const eyeTilt = Math.abs(landmarks.getLeftEye()[0].y - landmarks.getRightEye()[0].y);
 
-      if (horizontalOffset < 18 && avgEyeHeight > 9 && eyeTilt < 12) {
+      //if (horizontalOffset < 18 && avgEyeHeight > 9 && eyeTilt < 12) {
+      if (horizontalOffset < 32 && avgEyeHeight > 6.5 && eyeTilt < 22) {
         statusDiv.innerHTML = "✅ Good position — Looking straight at camera<br><small>Press <b>Space</b> to capture</small>";
         statusDiv.className = "face-status good";
         captureBtn.disabled = false;
@@ -545,7 +546,8 @@ function runFaceDetectionSearch(video, statusDiv, captureBtn, webcamSection) {
       const avgEyeHeight = (leftEyeHeight + rightEyeHeight) / 2;
       const eyeTilt = Math.abs(landmarks.getLeftEye()[0].y - landmarks.getRightEye()[0].y);
 
-      if (horizontalOffset < 18 && avgEyeHeight > 9 && eyeTilt < 12) {
+      //if (horizontalOffset < 18 && avgEyeHeight > 9 && eyeTilt < 12) {
+      if (horizontalOffset < 32 && avgEyeHeight > 6.5 && eyeTilt < 22) {
         statusDiv.innerHTML = "✅ Good position — Looking straight at camera<br><small>Press <b>Space</b> to capture</small>";
         statusDiv.className = "face-status good";
         captureBtn.disabled = false;
@@ -632,18 +634,36 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+
 // ====================== STAGE MODALS ======================
 function showStageModal(step) {
   const modal = document.getElementById('stageModal');
   const title = document.getElementById('modalTitle');
   const content = document.getElementById('modalContent');
 
+  const baseUrl = window.location.origin;   // automatically uses page's
+
   let html = '';
-  if (step === 1) { title.textContent = 'Stage 1 – Upload/Capture Image'; html = 'Image selected or captured.\nBase64 data is ready for the API call.'; }
-  else if (step === 2) { title.textContent = 'Stage 2 – Enrol Request Sent'; html = `POST http://localhost:3001/enroll\n\nPayload:\n{\n  "flyerId": "${document.getElementById('flyerId').value || 'flyer_2026_042'}",\n  "imageBase64": "[base64 string]"\n}`; }
-  else if (step === 3) { title.textContent = 'Stage 3 – Enrol Request Queued'; html = 'Enrol API returned success.\nMessage is now in Solace queue.'; }
-  else if (step === 4) { title.textContent = 'Stage 4 – Waiting for Verification'; html = `GET http://localhost:3003/verify/${document.getElementById('flyerId').value || 'flyer_2026_042'}\n\nPolling every 500ms...`; }
-  else if (step === 5) { title.textContent = 'Stage 5 – Enrolled'; html = 'Verification API confirmed success.\nFlyer is now stored in Qdrant.'; }
+  if (step === 1) {
+    title.textContent = 'Stage 1 – Upload/Capture Image';
+    html = 'Image selected or captured.\nBase64 data is ready for the API call.';
+  }
+  else if (step === 2) {
+    title.textContent = 'Stage 2 – Enroll Request Sent';
+    html = `POST ${baseUrl}/enroll\n\nPayload:\n{\n  "flyerId": "${document.getElementById('flyerId').value || 'flyer_2026_042'}",\n  "imageBase64": "[base64 string]"\n}`;
+  }
+  else if (step === 3) {
+    title.textContent = 'Stage 3 – Enroll Request Queued';
+    html = 'Enroll API returned success.\nMessage is now in Solace queue.';
+  }
+  else if (step === 4) {
+    title.textContent = 'Stage 4 – Waiting for Verification';
+    html = `GET ${baseUrl}/verify/${document.getElementById('flyerId').value || 'flyer_2026_042'}\n\nPolling every 500ms...`;
+  }
+  else if (step === 5) {
+    title.textContent = 'Stage 5 – Enrolled';
+    html = 'Verification API confirmed success.\nFlyer is now stored in Qdrant.';
+  }
 
   content.innerHTML = `<pre>${html}</pre>`;
   modal.style.display = 'flex';
@@ -654,17 +674,24 @@ function showStageModalSearch(step) {
   const title = document.getElementById('modalTitle');
   const content = document.getElementById('modalContent');
 
+  const baseUrl = window.location.origin;
+
   let html = '';
-  if (step === 1) { title.textContent = 'Stage 1 – Upload/Capture Image'; html = 'Image selected or captured.\nBase64 data is ready for the API call.'; }
-  else if (step === 2) { title.textContent = 'Stage 2 – Match Request Sent'; html = `POST http://localhost:3002/match\n\nPayload:\n{\n  "imageBase64": "[base64 string]"\n}`; }
-  else if (step === 3) { title.textContent = 'Stage 3 – Match found'; html = 'Match API returned success.\nResults are displayed above.'; }
+  if (step === 1) {
+    title.textContent = 'Stage 1 – Upload/Capture Image';
+    html = 'Image selected or captured.\nBase64 data is ready for the API call.';
+  }
+  else if (step === 2) {
+    title.textContent = 'Stage 2 – Match Request Sent';
+    html = `POST ${baseUrl}/match\n\nPayload:\n{\n  "imageBase64": "[base64 string]"\n}`;
+  }
+  else if (step === 3) {
+    title.textContent = 'Stage 3 – Match found';
+    html = 'Match API returned success.\nResults are displayed above.';
+  }
 
   content.innerHTML = `<pre>${html}</pre>`;
   modal.style.display = 'flex';
-}
-
-function hideModal() {
-  document.getElementById('stageModal').style.display = 'none';
 }
 
 // ====================== POLL VERIFICATION ======================
@@ -675,7 +702,7 @@ async function pollVerification(flyerId) {
   const poll = async () => {
     attempts++;
     try {
-      const res = await fetch(`http://localhost:3003/verify/${flyerId}`);
+      const res = await fetch(`/verify/${flyerId}`);
       const data = await res.json();
 
       if (data.enrolled) {
