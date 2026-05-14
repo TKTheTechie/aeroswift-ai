@@ -93,6 +93,7 @@ Modern Svelte 5 web application that displays:
 - Responsive design with Tailwind CSS
 - Demo mode for development without hardware
 - **Webcam mode** (`VITE_WEBCAM_MODE=true`): uses the browser's built-in webcam as a camera source — captures frames on face detection and publishes them to Solace, enabling a full demo without an ESP32
+- **Video Feed view**: dedicated full-screen live video stream viewer accessible from the splash screen — subscribes to the Solace video topic and renders frames in real time without the passenger info overlay
 - Automatic reconnection handling
 - Custom airline-themed UI
 

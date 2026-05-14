@@ -4,6 +4,7 @@
   import WebcamPublisher from './lib/WebcamPublisher.svelte';
   import PassengerInfo from './lib/PassengerInfo.svelte';
   import SplashScreen from './lib/SplashScreen.svelte';
+  import VideoFeedViewer from './lib/VideoFeedViewer.svelte';
   import { SolaceVideoClient } from './lib/common/solace';
   import { APP_CONFIG, WEBCAM_MODE } from './lib/common/config';
 
@@ -37,10 +38,16 @@
     currentView = 'webcam';
   }
 
+  function handleVideoFeed() {
+    currentView = 'videoFeed';
+  }
+
 </script>
 
 {#if currentView === 'splash'}
-  <SplashScreen onEnter={handleEnter} onWebcam={handleWebcam} />
+  <SplashScreen onEnter={handleEnter} onWebcam={handleWebcam} onVideoFeed={handleVideoFeed} />
+{:else if currentView === 'videoFeed'}
+  <VideoFeedViewer {solaceClient} onBack={() => currentView = 'splash'} />
 {:else if currentView === 'webcam' && WebcamFeed}
   <WebcamFeed onBack={() => currentView = 'splash'} />
 {:else}
