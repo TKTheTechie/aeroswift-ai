@@ -1,0 +1,2 @@
+com.solacecoe.spring.cloud.stream.binders.qdrant.config.ExtendedQdrantBindingHandlerMappingsProviderConfiguration
+com.solacecoe.spring.cloud.stream.binders.qdrant.config.QdrantBinderConnectorCustomizationConfiguration

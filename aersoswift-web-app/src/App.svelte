@@ -1,60 +1,62 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
   import CameraFeed from './lib/CameraFeed.svelte';
+  import WebcamPublisher from './lib/WebcamPublisher.svelte';
   import PassengerInfo from './lib/PassengerInfo.svelte';
   import SplashScreen from './lib/SplashScreen.svelte';
   import { SolaceVideoClient } from './lib/common/solace';
-  import { APP_CONFIG, FACE_SCAN_RESET_TOPIC } from './lib/common/config';
+  import { APP_CONFIG, WEBCAM_MODE } from './lib/common/config';
 
-  function scanNextPassenger() {
-    solaceClient?.publishControl(FACE_SCAN_RESET_TOPIC, { action: 'reset', timestamp: new Date().toISOString() });
-  }
+  let currentView = $state('splash');
+  let WebcamFeed = $state(null);
+  let faceMatchPending = $state(false);
 
-  let showSplash = $state(true);
-  let solaceClient = $state(null);
+  const solaceClient = new SolaceVideoClient(APP_CONFIG.solace);
 
   onMount(async () => {
     try {
-      const client = new SolaceVideoClient(APP_CONFIG.solace);
-      await client.connect();
-      solaceClient = client;
+      await solaceClient.connect();
     } catch (error) {
-      console.error('Failed to connect to Solace:', error);
+      console.error('App: Failed to connect to Solace:', error);
     }
   });
 
   onDestroy(() => {
-    solaceClient?.disconnect();
+    solaceClient.disconnect();
   });
 
   function handleEnter() {
-    showSplash = false;
+    currentView = 'main';
   }
+
+  async function handleWebcam() {
+    if (!WebcamFeed) {
+      const mod = await import('./lib/WebcamFeed.svelte');
+      WebcamFeed = mod.default;
+    }
+    currentView = 'webcam';
+  }
+
 </script>
 
-{#if showSplash}
-  <SplashScreen onEnter={handleEnter} />
+{#if currentView === 'splash'}
+  <SplashScreen onEnter={handleEnter} onWebcam={handleWebcam} />
+{:else if currentView === 'webcam' && WebcamFeed}
+  <WebcamFeed onBack={() => currentView = 'splash'} />
 {:else}
   <div class="min-h-screen bg-gradient-to-br from-aero-bg via-white to-aero-bg flex flex-col">
     <!-- Header -->
     <header class="bg-white shadow-md border-b-4 border-aero-teal">
-      <div class="container mx-auto px-4 py-4 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="w-12 h-12 bg-gradient-to-br from-aero-teal to-aero-dark rounded-full flex items-center justify-center">
-            <span class="text-white text-2xl font-bold">✈</span>
+      <div class="container mx-auto px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <div class="flex items-center gap-2 shrink-0">
+          <div class="w-9 h-9 sm:w-12 sm:h-12 bg-gradient-to-br from-aero-teal to-aero-dark rounded-full flex items-center justify-center">
+            <span class="text-white text-lg sm:text-2xl font-bold">✈</span>
           </div>
-          <h1 class="text-3xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-aero-teal to-aero-dark">
+          <h1 class="text-xl sm:text-3xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-aero-teal to-aero-dark">
             AeroSwift AI
           </h1>
         </div>
-        <button
-          onclick={scanNextPassenger}
-          disabled={!solaceClient}
-          class="px-5 py-2 bg-gradient-to-r from-aero-teal to-aero-dark text-white font-semibold rounded-full shadow hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
-        >
-          Scan Next Passenger
-        </button>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 ml-auto shrink-0">
           <div class="w-3 h-3 bg-aero-teal rounded-full animate-pulse"></div>
           <span class="text-sm font-medium text-gray-600">Live</span>
         </div>
@@ -63,18 +65,19 @@
 
     <!-- Main Content -->
     <main class="flex-1 container mx-auto px-4 py-6 flex flex-col gap-6">
-      {#if solaceClient}
-        <CameraFeed {solaceClient} />
-        <PassengerInfo {solaceClient} />
-      {:else}
-        <div class="flex items-center justify-center flex-1 gap-3 text-gray-400">
-          <svg class="w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-          </svg>
-          <span>Connecting to Solace...</span>
-        </div>
-      {/if}
+
+      <div class="w-full">
+        {#if WEBCAM_MODE}
+          <WebcamPublisher {solaceClient}
+            onMatchRequest={() => faceMatchPending = true}
+            onMatchReset={() => faceMatchPending = false}
+          />
+        {:else}
+          <CameraFeed {solaceClient} />
+        {/if}
+      </div>
+
+      <PassengerInfo {faceMatchPending} onMatchReset={() => faceMatchPending = false} />
     </main>
   </div>
 {/if}

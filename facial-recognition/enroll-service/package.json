@@ -5,12 +5,13 @@
     "@tensorflow/tfjs-node": "^4.22.0",
     "@vladmandic/face-api": "^1.7.15",
     "@vladmandic/human": "^3.3.6",
-    "body-parser": "^1.20.2",
+    "body-parser": "^1.20.5",
     "canvas": "^3.2.1",
     "cors": "^2.8.6",
-    "express": "^4.19.2",
+    "express": "^4.22.1",
     "onnxruntime-node": "^1.17.0",
-    "sharp": "^0.33.5"
+    "sharp": "^0.33.5",
+    "solclientjs": "^10.18.3"
   },
   "name": "enroll-service",
   "version": "1.0.0",

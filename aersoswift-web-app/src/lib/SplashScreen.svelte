@@ -1,8 +1,9 @@
 <script>
   import { Canvas } from '@threlte/core';
   import Scene from './Scene.svelte';
-  
-  let { onEnter } = $props();
+  import { DEMO_MODE, WEBCAM_MODE } from './common/config';
+
+  let { onEnter, onWebcam } = $props();
   let isLoading = $state(true);
 </script>
 
@@ -36,14 +37,25 @@
     </div>
   </div>
   
-  <!-- Bottom Section - Button (Fixed at bottom) -->
+  <!-- Bottom Section - Buttons (Fixed at bottom) -->
   <div class="space-y-3 pb-6 px-6 text-center">
-    <button
-      onclick={onEnter}
-      class="group relative px-8 py-4 bg-white text-aero-dark font-bold text-lg rounded-full shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 hover:bg-aero-teal hover:text-white"
-    >
-      <span class="relative z-10">Enter Experience</span>
-    </button>
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+      {#if DEMO_MODE && !WEBCAM_MODE}
+        <button
+          onclick={onWebcam}
+          class="group relative px-8 py-4 bg-white text-aero-dark font-bold text-lg rounded-full shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 hover:bg-aero-teal hover:text-white"
+        >
+          <span class="relative z-10">Webcam Demo</span>
+        </button>
+      {:else}
+        <button
+          onclick={onEnter}
+          class="group relative px-8 py-4 bg-white text-aero-dark font-bold text-lg rounded-full shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 hover:bg-aero-teal hover:text-white"
+        >
+          <span class="relative z-10">Enter Experience</span>
+        </button>
+      {/if}
+    </div>
     <p class="text-white/70 text-sm">Drag to rotate • Scroll to zoom</p>
   </div>
 </div>

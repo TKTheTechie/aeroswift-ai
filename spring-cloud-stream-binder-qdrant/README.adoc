@@ -1,0 +1,23 @@
+= spring-cloud-stream-binder-qdrant
+:doctype: book
+:toc: preamble
+:toclevels: 3
+:icons: font
+
+// Github-Specific Settings
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+
+A Spring Cloud Stream binder built on the Solace Connector Framework, for use in a Solace Micro-Integration application.
+
+To install this project:
+
+[source, shell]
+----
+mvn clean install
+----
