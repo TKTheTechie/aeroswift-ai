@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Flyer Enrol & Search</title>
+  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.0/dist/face-api.min.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 980px; margin: 30px auto; padding: 0 20px; background: #f8f9fa; }
+    h1 { text-align: center; color: #2c3e50; margin-bottom: 8px; }
+    .logo-placeholder { text-align: center; margin-bottom: 10px; }
+    .logo-placeholder img { max-height: 140px; width: auto; }
+    .tabs { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 1.5rem; }
+    .tab { flex: 1; padding: 14px; text-align: center; background: #eee; cursor: pointer; font-weight: 500; }
+    .tab.active { background: white; border-bottom: 3px solid #0066cc; font-weight: 600; }
+
+    .panel-content { display: flex; gap: 30px; }
+    .main-content { flex: 1; }
+    .progress-sidebar { width: 260px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); align-self: flex-start; }
+
+    .panel { display: none; background: white; padding: 24px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+    .panel.active { display: block; }
+    .form-group { margin-bottom: 1.8rem; }
+    label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+    input[type="text"], input[type="file"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+    button { padding: 12px 20px; background: #0066cc; color: white; border: none; border-radius: 6px; cursor: pointer; margin-left: 8px; }
+    button:hover:not(:disabled) { background: #0055aa; }
+    button:disabled { background: #aaa; cursor: not-allowed; }
+    button.reset { background: #6c757d; }
+    button.reset:hover { background: #5a6268; }
+    .preview { max-width: 280px; max-height: 280px; border: 1px solid #ddd; border-radius: 6px; }
+
+    .preview-row { display: flex; align-items: flex-end; gap: 12px; margin-top: 12px; }
+    .preview-row .preview-container { flex: 1; }
+
+    .webcam-section { border: 3px dashed #ccc; padding: 15px; border-radius: 12px; margin-top: 12px; transition: all 0.3s ease; }
+    .webcam-section.good { border-color: #28a745; box-shadow: 0 0 0 5px rgba(40,167,69,0.25); }
+    .webcam-section.bad  { border-color: #dc3545; box-shadow: 0 0 0 5px rgba(220,53,69,0.25); }
+
+    video { width: 100%; max-height: 380px; background: #000; border-radius: 8px; }
+    .face-status { margin-top: 10px; padding: 12px; border-radius: 6px; text-align: center; font-weight: bold; min-height: 58px; }
+    .good { background: #d4edda; color: #155724; }
+    .bad  { background: #f8d7da; color: #721c24; }
+    .info { background: #fff3cd; color: #856404; }
+    .shortcut-hint { font-size: 0.85em; color: #555; margin-top: 6px; }
+
+    .stepper { counter-reset: step; }
+    .step { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; cursor: pointer; }
+    .step-circle { width: 28px; height: 28px; border: 3px solid #ccc; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; background: white; }
+    .step.completed .step-circle { border-color: #28a745; color: #28a745; }
+    .step.pending .step-circle { border-color: #6c757d; color: #6c757d; }
+    .step-label { font-size: 15px; }
+
+    #enrolResult, #enrolError, #searchResult, #searchError { margin: 20px 0; padding: 16px; border-radius: 8px; font-size: 0.95em; display: none; }
+    #enrolResult, #searchResult { background: #e8f4fd; border: 1px solid #b3d4fc; }
+    #enrolError, #searchError { background: #ffebee; border: 1px solid #ffcdd2; color: #c62828; }
+
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; align-items: center; justify-content: center; }
+    .modal-content { background: white; padding: 24px; border-radius: 12px; max-width: 560px; width: 90%; max-height: 80vh; overflow: auto; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .modal-close { cursor: pointer; font-size: 28px; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<div class="logo-placeholder">
+  <img src="aeroswift2.png" alt="Company Logo">
+</div>
+<h1>Flyer Enrol & Search</h1>
+
+<div class="tabs">
+  <div class="tab active" data-tab="enrol">Enrol</div>
+  <div class="tab" data-tab="search">Search / Match</div>
+</div>
+
+<!-- ENROL PANEL -->
+<div id="enrol" class="panel active">
+  <div class="panel-content">
+    <div class="main-content">
+      <form id="enrolForm">
+        <div class="form-group">
+          <label for="flyerId">Flyer ID</label>
+          <input type="text" id="flyerId" placeholder="e.g. flyer_2026_042" required />
+        </div>
+
+        <div class="form-group">
+          <label>Option 1: Upload Image</label>
+          <input type="file" id="enrolImage" accept="image/jpeg,image/png" />
+          <div class="preview-row">
+            <div class="preview-container">
+              <img id="enrolPreview" class="preview" style="display:none;" alt="preview"/>
+            </div>
+            <button type="button" id="enrolBtn" disabled>Enrol Flyer</button>
+            <button type="button" id="enrolResetBtn" class="reset">Reset</button>
+          </div>
+        </div>
+
+        <div id="enrolResult"></div>
+        <div id="enrolError"></div>
+
+        <div style="text-align:center; margin:25px 0; font-weight:500;">— OR —</div>
+
+        <div class="form-group">
+          <label>Option 2: Capture with Webcam</label>
+          <div class="webcam-section" id="enrolWebcamSection">
+            <video id="enrolVideo" autoplay playsinline></video>
+            <div style="margin-top:12px;">
+              <button type="button" id="enrolStartBtn">Start Camera</button>
+              <button type="button" id="enrolCaptureBtn" disabled>Capture Photo</button>
+              <button type="button" id="enrolStopBtn" disabled>Stop Camera</button>
+            </div>
+            <div id="enrolFaceStatus" class="face-status info">Waiting for camera...</div>
+            <div class="shortcut-hint">💡 Tip: Press <strong>Spacebar</strong> to quickly capture when ready</div>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="progress-sidebar">
+      <h3 style="margin-top:0;">Enrolment Progress</h3>
+      <div class="stepper" id="enrolProgress">
+        <div class="step pending" data-step="1" onclick="showStageModal(1)"><div class="step-circle">1</div><div class="step-label">Upload/Capture Image</div></div>
+        <div class="step pending" data-step="2" onclick="showStageModal(2)"><div class="step-circle">2</div><div class="step-label">Enrol Request Sent</div></div>
+        <div class="step pending" data-step="3" onclick="showStageModal(3)"><div class="step-circle">3</div><div class="step-label">Enrol Request Queued</div></div>
+        <div class="step pending" data-step="4" onclick="showStageModal(4)"><div class="step-circle">4</div><div class="step-label">Waiting for Verification</div></div>
+        <div class="step pending" data-step="5" onclick="showStageModal(5)"><div class="step-circle">5</div><div class="step-label">Enrolled</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SEARCH / MATCH PANEL -->
+<div id="search" class="panel">
+  <div class="panel-content">
+    <div class="main-content">
+      <form id="searchForm">
+        <div class="form-group">
+          <label>Option 1: Upload Image</label>
+          <input type="file" id="searchImage" accept="image/jpeg,image/png" />
+          <div class="preview-row">
+            <div class="preview-container">
+              <img id="searchPreview" class="preview" style="display:none;" alt="preview"/>
+            </div>
+            <button type="button" id="searchBtn" disabled>Search / Match</button>
+            <button type="button" id="searchResetBtn" class="reset">Reset</button>
+          </div>
+        </div>
+
+        <div id="searchResult"></div>
+        <div id="searchError"></div>
+
+        <div style="text-align:center; margin:25px 0; font-weight:500;">— OR —</div>
+
+        <div class="form-group">
+          <label>Option 2: Capture with Webcam</label>
+          <div class="webcam-section" id="searchWebcamSection">
+            <video id="searchVideo" autoplay playsinline></video>
+            <div style="margin-top:12px;">
+              <button type="button" id="searchStartBtn">Start Camera</button>
+              <button type="button" id="searchCaptureBtn" disabled>Capture Photo</button>
+              <button type="button" id="searchStopBtn" disabled>Stop Camera</button>
+            </div>
+            <div id="searchFaceStatus" class="face-status info">Waiting for camera...</div>
+            <div class="shortcut-hint">💡 Tip: Press <strong>Spacebar</strong> to quickly capture when ready</div>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="progress-sidebar">
+      <h3 style="margin-top:0;">Search Progress</h3>
+      <div class="stepper" id="searchProgress">
+        <div class="step pending" data-step="1" onclick="showStageModalSearch(1)"><div class="step-circle">1</div><div class="step-label">Upload/Capture Image</div></div>
+        <div class="step pending" data-step="2" onclick="showStageModalSearch(2)"><div class="step-circle">2</div><div class="step-label">Match Request Sent</div></div>
+        <div class="step pending" data-step="3" onclick="showStageModalSearch(3)"><div class="step-circle">3</div><div class="step-label">Match found</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div id="stageModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="modalTitle"></h3>
+      <span class="modal-close" onclick="hideModal()">×</span>
+    </div>
+    <pre id="modalContent" style="background:#f4f4f4;padding:16px;border-radius:8px;white-space:pre-wrap;"></pre>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.0/dist/face-api.min.js"></script>
+<script>
+// ====================== TAB SWITCHING ======================
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.tab).classList.add('active');
+  });
+});
+
+// ====================== SHARED HELPERS ======================
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function clearMessages(prefix) {
+  document.getElementById(prefix + 'Result').style.display = 'none';
+  document.getElementById(prefix + 'Error').style.display = 'none';
+}
+
+function updateProgress(tab, stepNumber, status) {
+  const container = document.getElementById(tab === 'enrol' ? 'enrolProgress' : 'searchProgress');
+  const step = container.querySelector(`[data-step="${stepNumber}"]`);
+  if (step) {
+    step.classList.remove('pending', 'completed');
+    step.classList.add(status);
+  }
+}
+
+function resetProgressEnrol() {
+  const container = document.getElementById('enrolProgress');
+  for (let i = 2; i <= 5; i++) {
+    const step = container.querySelector(`[data-step="${i}"]`);
+    if (step) {
+      step.classList.remove('completed');
+      step.classList.add('pending');
+    }
+  }
+}
+
+function resetProgressSearch() {
+  const container = document.getElementById('searchProgress');
+  for (let i = 2; i <= 3; i++) {
+    const step = container.querySelector(`[data-step="${i}"]`);
+    if (step) {
+      step.classList.remove('completed');
+      step.classList.add('pending');
+    }
+  }
+}
+
+// ====================== ENROL TAB ======================
+document.getElementById('enrolImage').addEventListener('change', async e => {
+  if (e.target.files[0]) {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      document.getElementById('enrolPreview').src = ev.target.result;
+      document.getElementById('enrolPreview').style.display = 'block';
+    };
+    reader.readAsDataURL(e.target.files[0]);
+
+    const base64 = await fileToBase64(e.target.files[0]);
+    document.getElementById('enrolForm').dataset.base64 = base64.split(',')[1];
+
+    document.getElementById('enrolBtn').disabled = false;
+    resetProgressEnrol();
+    updateProgress('enrol', 1, 'completed');
+    clearMessages('enrol');
+  }
+});
+
+// NEW PRE-CHECK LOGIC ON ENROL BUTTON
+document.getElementById('enrolBtn').addEventListener('click', async function() {
+  const btn = this;
+  btn.disabled = true;
+  clearMessages('enrol');
+
+  try {
+    const flyerId = document.getElementById('flyerId').value.trim();
+    if (!flyerId) throw new Error("Flyer ID is required");
+
+    // === PRE-CHECK: Verify if flyerId already exists ===
+    const verifyRes = await fetch(`http://localhost:3003/verify/${flyerId}`);
+    const verifyData = await verifyRes.json();
+
+    if (verifyData.enrolled === true) {
+      document.getElementById('enrolError').innerHTML = `
+        <strong>Flyer ID already exists!</strong><br>
+        This Flyer ID is already registered in Qdrant.<br>
+        Please use a different Flyer ID.
+      `;
+      document.getElementById('enrolError').style.display = 'block';
+      return; // STOP - do not call enroll API
+    }
+
+    // === If not registered, proceed with enroll ===
+    const base64 = document.getElementById('enrolForm').dataset.base64;
+    if (!base64) throw new Error("No image captured or uploaded");
+
+    updateProgress('enrol', 2, 'completed');
+
+    const response = await fetch('http://localhost:3001/enroll', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ flyerId, imageBase64: base64 })
+    });
+
+    const data = await response.json();
+
+    updateProgress('enrol', 3, 'completed');
+
+    document.getElementById('enrolResult').innerHTML = `
+      <strong>Enrol Response:</strong><br>
+      <pre style="background:#f4f4f4;padding:12px;border-radius:6px;overflow:auto;">${JSON.stringify(data, null, 2)}</pre>
+    `;
+    document.getElementById('enrolResult').style.display = 'block';
+
+    updateProgress('enrol', 4, 'completed');
+    await pollVerification(flyerId);
+
+    stopCameraEnrol();
+
+  } catch (err) {
+    document.getElementById('enrolError').textContent = err.message;
+    document.getElementById('enrolError').style.display = 'block';
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// Reset button for Enrol (clears everything including Flyer ID)
+document.getElementById('enrolResetBtn').addEventListener('click', () => {
+  document.getElementById('enrolImage').value = '';
+  document.getElementById('enrolPreview').style.display = 'none';
+  document.getElementById('enrolForm').dataset.base64 = '';
+  document.getElementById('flyerId').value = '';
+  document.getElementById('enrolBtn').disabled = true;
+  resetProgressEnrol();
+  clearMessages('enrol');
+  stopCameraEnrol();
+});
+
+// ====================== SEARCH / MATCH TAB ======================
+document.getElementById('searchImage').addEventListener('change', async e => {
+  if (e.target.files[0]) {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      document.getElementById('searchPreview').src = ev.target.result;
+      document.getElementById('searchPreview').style.display = 'block';
+    };
+    reader.readAsDataURL(e.target.files[0]);
+
+    const base64 = await fileToBase64(e.target.files[0]);
+    document.getElementById('searchForm').dataset.base64 = base64.split(',')[1];
+
+    document.getElementById('searchBtn').disabled = false;
+    resetProgressSearch();
+    updateProgress('search', 1, 'completed');
+    clearMessages('search');
+  }
+});
+
+document.getElementById('searchBtn').addEventListener('click', async function() {
+  const btn = this;
+  btn.disabled = true;
+  clearMessages('search');
+
+  try {
+    const base64 = document.getElementById('searchForm').dataset.base64;
+    if (!base64) throw new Error("No image captured or uploaded");
+
+    updateProgress('search', 2, 'completed');
+
+    const response = await fetch('http://localhost:3002/match', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageBase64: base64 })
+    });
+
+    const data = await response.json();
+
+    document.getElementById('searchResult').innerHTML = `
+      <strong>Match Response:</strong><br>
+      <pre style="background:#f4f4f4;padding:12px;border-radius:6px;overflow:auto;">${JSON.stringify(data, null, 2)}</pre>
+    `;
+    document.getElementById('searchResult').style.display = 'block';
+
+    updateProgress('search', 3, 'completed');
+
+    stopCameraSearch();
+
+  } catch (err) {
+    document.getElementById('searchError').textContent = err.message;
+    document.getElementById('searchError').style.display = 'block';
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// Reset button for Search
+document.getElementById('searchResetBtn').addEventListener('click', () => {
+  document.getElementById('searchImage').value = '';
+  document.getElementById('searchPreview').style.display = 'none';
+  document.getElementById('searchForm').dataset.base64 = '';
+  document.getElementById('searchBtn').disabled = true;
+  resetProgressSearch();
+  clearMessages('search');
+  stopCameraSearch();
+});
+
+function resetProgressSearch() {
+  const container = document.getElementById('searchProgress');
+  for (let i = 2; i <= 3; i++) {
+    const step = container.querySelector(`[data-step="${i}"]`);
+    if (step) {
+      step.classList.remove('completed');
+      step.classList.add('pending');
+    }
+  }
+}
+
+// ====================== WEBCAM & FACE DETECTION ======================
+let modelsLoaded = false;
+let currentStreamEnrol = null;
+let currentStreamSearch = null;
+
+async function loadModels() {
+  console.log("🔄 Loading face detection models...");
+  const status = document.getElementById('enrolFaceStatus');
+  status.innerHTML = "Loading face detection models...";
+  status.className = "face-status info";
+
+  const MODEL_URL = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights';
+  await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+  await faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL);
+  modelsLoaded = true;
+  console.log("✅ Face detection models loaded successfully");
+}
+
+async function startCameraEnrol() {
+  if (!modelsLoaded) await loadModels();
+  const video = document.getElementById('enrolVideo');
+  const captureBtn = document.getElementById('enrolCaptureBtn');
+  const stopBtn = document.getElementById('enrolStopBtn');
+  const statusDiv = document.getElementById('enrolFaceStatus');
+  const webcamSection = document.getElementById('enrolWebcamSection');
+
+  try {
+    currentStreamEnrol = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+    video.srcObject = currentStreamEnrol;
+    stopBtn.disabled = false;
+
+    setTimeout(() => {
+      console.log("🚀 Starting face detection loop (Enrol)");
+      runFaceDetectionEnrol(video, statusDiv, captureBtn, webcamSection);
+    }, 1200);
+  } catch (err) {
+    console.error("❌ Webcam error (Enrol):", err);
+  }
+}
+
+function runFaceDetectionEnrol(video, statusDiv, captureBtn, webcamSection) {
+  const detect = async () => {
+    if (!currentStreamEnrol) return;
+    const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks(true);
+    if (detection) {
+      const landmarks = detection.landmarks;
+      const noseX = landmarks.getNose()[3].x;
+      const leftEyeX = landmarks.getLeftEye()[0].x;
+      const rightEyeX = landmarks.getRightEye()[0].x;
+      const eyeCenterX = (leftEyeX + rightEyeX) / 2;
+      const horizontalOffset = Math.abs(noseX - eyeCenterX);
+      const leftEyeHeight = Math.abs(landmarks.getLeftEye()[1].y - landmarks.getLeftEye()[5].y);
+      const rightEyeHeight = Math.abs(landmarks.getRightEye()[1].y - landmarks.getRightEye()[5].y);
+      const avgEyeHeight = (leftEyeHeight + rightEyeHeight) / 2;
+      const eyeTilt = Math.abs(landmarks.getLeftEye()[0].y - landmarks.getRightEye()[0].y);
+
+      if (horizontalOffset < 18 && avgEyeHeight > 9 && eyeTilt < 12) {
+        statusDiv.innerHTML = "✅ Good position — Looking straight at camera<br><small>Press <b>Space</b> to capture</small>";
+        statusDiv.className = "face-status good";
+        captureBtn.disabled = false;
+        webcamSection.classList.add('good');
+        webcamSection.classList.remove('bad');
+      } else {
+        statusDiv.innerHTML = "❌ Please look straight at the camera";
+        statusDiv.className = "face-status bad";
+        captureBtn.disabled = true;
+        webcamSection.classList.add('bad');
+        webcamSection.classList.remove('good');
+      }
+    } else {
+      statusDiv.innerHTML = "❌ No face detected";
+      statusDiv.className = "face-status bad";
+      captureBtn.disabled = true;
+      webcamSection.classList.add('bad');
+      webcamSection.classList.remove('good');
+    }
+    requestAnimationFrame(detect);
+  };
+  detect();
+}
+
+function stopCameraEnrol() {
+  if (currentStreamEnrol) {
+    currentStreamEnrol.getTracks().forEach(track => track.stop());
+    currentStreamEnrol = null;
+  }
+  document.getElementById('enrolCaptureBtn').disabled = true;
+  document.getElementById('enrolWebcamSection').classList.remove('good', 'bad');
+}
+
+async function startCameraSearch() {
+  if (!modelsLoaded) await loadModels();
+  const video = document.getElementById('searchVideo');
+  const captureBtn = document.getElementById('searchCaptureBtn');
+  const stopBtn = document.getElementById('searchStopBtn');
+  const statusDiv = document.getElementById('searchFaceStatus');
+  const webcamSection = document.getElementById('searchWebcamSection');
+
+  try {
+    currentStreamSearch = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+    video.srcObject = currentStreamSearch;
+    stopBtn.disabled = false;
+
+    setTimeout(() => {
+      console.log("🚀 Starting face detection loop (Search)");
+      runFaceDetectionSearch(video, statusDiv, captureBtn, webcamSection);
+    }, 1200);
+  } catch (err) {
+    console.error("❌ Webcam error (Search):", err);
+  }
+}
+
+function runFaceDetectionSearch(video, statusDiv, captureBtn, webcamSection) {
+  const detect = async () => {
+    if (!currentStreamSearch) return;
+    const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks(true);
+    if (detection) {
+      const landmarks = detection.landmarks;
+      const noseX = landmarks.getNose()[3].x;
+      const leftEyeX = landmarks.getLeftEye()[0].x;
+      const rightEyeX = landmarks.getRightEye()[0].x;
+      const eyeCenterX = (leftEyeX + rightEyeX) / 2;
+      const horizontalOffset = Math.abs(noseX - eyeCenterX);
+      const leftEyeHeight = Math.abs(landmarks.getLeftEye()[1].y - landmarks.getLeftEye()[5].y);
+      const rightEyeHeight = Math.abs(landmarks.getRightEye()[1].y - landmarks.getRightEye()[5].y);
+      const avgEyeHeight = (leftEyeHeight + rightEyeHeight) / 2;
+      const eyeTilt = Math.abs(landmarks.getLeftEye()[0].y - landmarks.getRightEye()[0].y);
+
+      if (horizontalOffset < 18 && avgEyeHeight > 9 && eyeTilt < 12) {
+        statusDiv.innerHTML = "✅ Good position — Looking straight at camera<br><small>Press <b>Space</b> to capture</small>";
+        statusDiv.className = "face-status good";
+        captureBtn.disabled = false;
+        webcamSection.classList.add('good');
+        webcamSection.classList.remove('bad');
+      } else {
+        statusDiv.innerHTML = "❌ Please look straight at the camera";
+        statusDiv.className = "face-status bad";
+        captureBtn.disabled = true;
+        webcamSection.classList.add('bad');
+        webcamSection.classList.remove('good');
+      }
+    } else {
+      statusDiv.innerHTML = "❌ No face detected";
+      statusDiv.className = "face-status bad";
+      captureBtn.disabled = true;
+      webcamSection.classList.add('bad');
+      webcamSection.classList.remove('good');
+    }
+    requestAnimationFrame(detect);
+  };
+  detect();
+}
+
+function stopCameraSearch() {
+  if (currentStreamSearch) {
+    currentStreamSearch.getTracks().forEach(track => track.stop());
+    currentStreamSearch = null;
+  }
+  document.getElementById('searchCaptureBtn').disabled = true;
+  document.getElementById('searchWebcamSection').classList.remove('good', 'bad');
+}
+
+// Webcam buttons
+document.getElementById('enrolStartBtn').addEventListener('click', startCameraEnrol);
+document.getElementById('enrolStopBtn').addEventListener('click', stopCameraEnrol);
+document.getElementById('enrolCaptureBtn').addEventListener('click', () => {
+  const video = document.getElementById('enrolVideo');
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  const base64 = canvas.toDataURL('image/jpeg', 0.92).split(',')[1];
+  document.getElementById('enrolForm').dataset.base64 = base64;
+  document.getElementById('enrolPreview').src = canvas.toDataURL('image/jpeg', 0.92);
+  document.getElementById('enrolPreview').style.display = 'block';
+  document.getElementById('enrolBtn').disabled = false;
+  resetProgressEnrol();
+  updateProgress('enrol', 1, 'completed');
+  clearMessages('enrol');
+});
+
+document.getElementById('searchStartBtn').addEventListener('click', startCameraSearch);
+document.getElementById('searchStopBtn').addEventListener('click', stopCameraSearch);
+document.getElementById('searchCaptureBtn').addEventListener('click', () => {
+  const video = document.getElementById('searchVideo');
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  const base64 = canvas.toDataURL('image/jpeg', 0.92).split(',')[1];
+  document.getElementById('searchForm').dataset.base64 = base64;
+  document.getElementById('searchPreview').src = canvas.toDataURL('image/jpeg', 0.92);
+  document.getElementById('searchPreview').style.display = 'block';
+  document.getElementById('searchBtn').disabled = false;
+  resetProgressSearch();
+  updateProgress('search', 1, 'completed');
+  clearMessages('search');
+});
+
+// Spacebar shortcut
+document.addEventListener('keydown', (e) => {
+  if (e.key === ' ' || e.key === 'Spacebar') {
+    e.preventDefault();
+    const enrolActive = document.getElementById('enrol').classList.contains('active');
+    const searchActive = document.getElementById('search').classList.contains('active');
+    if (enrolActive) {
+      const btn = document.getElementById('enrolCaptureBtn');
+      if (!btn.disabled) btn.click();
+    } else if (searchActive) {
+      const btn = document.getElementById('searchCaptureBtn');
+      if (!btn.disabled) btn.click();
+    }
+  }
+});
+
+// ====================== STAGE MODALS ======================
+function showStageModal(step) {
+  const modal = document.getElementById('stageModal');
+  const title = document.getElementById('modalTitle');
+  const content = document.getElementById('modalContent');
+
+  let html = '';
+  if (step === 1) { title.textContent = 'Stage 1 – Upload/Capture Image'; html = 'Image selected or captured.\nBase64 data is ready for the API call.'; }
+  else if (step === 2) { title.textContent = 'Stage 2 – Enrol Request Sent'; html = `POST http://localhost:3001/enroll\n\nPayload:\n{\n  "flyerId": "${document.getElementById('flyerId').value || 'flyer_2026_042'}",\n  "imageBase64": "[base64 string]"\n}`; }
+  else if (step === 3) { title.textContent = 'Stage 3 – Enrol Request Queued'; html = 'Enrol API returned success.\nMessage is now in Solace queue.'; }
+  else if (step === 4) { title.textContent = 'Stage 4 – Waiting for Verification'; html = `GET http://localhost:3003/verify/${document.getElementById('flyerId').value || 'flyer_2026_042'}\n\nPolling every 500ms...`; }
+  else if (step === 5) { title.textContent = 'Stage 5 – Enrolled'; html = 'Verification API confirmed success.\nFlyer is now stored in Qdrant.'; }
+
+  content.innerHTML = `<pre>${html}</pre>`;
+  modal.style.display = 'flex';
+}
+
+function showStageModalSearch(step) {
+  const modal = document.getElementById('stageModal');
+  const title = document.getElementById('modalTitle');
+  const content = document.getElementById('modalContent');
+
+  let html = '';
+  if (step === 1) { title.textContent = 'Stage 1 – Upload/Capture Image'; html = 'Image selected or captured.\nBase64 data is ready for the API call.'; }
+  else if (step === 2) { title.textContent = 'Stage 2 – Match Request Sent'; html = `POST http://localhost:3002/match\n\nPayload:\n{\n  "imageBase64": "[base64 string]"\n}`; }
+  else if (step === 3) { title.textContent = 'Stage 3 – Match found'; html = 'Match API returned success.\nResults are displayed above.'; }
+
+  content.innerHTML = `<pre>${html}</pre>`;
+  modal.style.display = 'flex';
+}
+
+function hideModal() {
+  document.getElementById('stageModal').style.display = 'none';
+}
+
+// ====================== POLL VERIFICATION ======================
+async function pollVerification(flyerId) {
+  const maxAttempts = 25;
+  let attempts = 0;
+
+  const poll = async () => {
+    attempts++;
+    try {
+      const res = await fetch(`http://localhost:3003/verify/${flyerId}`);
+      const data = await res.json();
+
+      if (data.enrolled) {
+        updateProgress('enrol', 5, 'completed');
+        document.getElementById('enrolResult').innerHTML += `
+          <hr style="margin:20px 0;">
+          <strong>Verification Response:</strong><br>
+          <pre style="background:#f4f4f4;padding:12px;border-radius:6px;overflow:auto;">${JSON.stringify(data, null, 2)}</pre>
+          <hr style="margin:15px 0;">
+          <strong style="color:#28a745;font-size:1.1em;">🎉 Enrolment Successful. Flyer added to Qdrant!</strong>
+        `;
+        return;
+      }
+      if (attempts < maxAttempts) setTimeout(poll, 500);
+    } catch (err) {
+      if (attempts < maxAttempts) setTimeout(poll, 500);
+    }
+  };
+  poll();
+}
+
+</script>
+</body>
+</html>
