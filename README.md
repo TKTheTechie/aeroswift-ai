@@ -408,7 +408,7 @@ AEROSWIFT_DB_NAME=data/aeroswift.db
 
 **Web App (animated)**: Set `VITE_DEMO_MODE=true` to generate an animated video feed without a Solace connection.
 
-**Web App (webcam)**: Set `VITE_WEBCAM_MODE=true` to use the browser's webcam as the camera source. The `WebcamPublisher` component runs face detection via `@vladmandic/face-api` (TinyFaceDetector) at 500 ms intervals and publishes captured JPEG frames to the face match request topic over Solace. This mode works alongside a live Solace broker and facial recognition services, making it useful for demos without physical ESP32 hardware.
+**Web App (webcam)**: Set `VITE_WEBCAM_MODE=true` to use the browser's webcam as the camera source. The `WebcamPublisher` component runs face detection via `@vladmandic/face-api` (TinyFaceDetector) at 500 ms intervals and publishes captured JPEG frames to the face match request topic over Solace. A **Quality** slider (10%–100%, default 85%) in the feed header lets you adjust JPEG compression on the fly — lower values reduce bandwidth at the cost of image fidelity. This mode works alongside a live Solace broker and facial recognition services, making it useful for demos without physical ESP32 hardware.
 
 **Camera Server**: Run without ESP32 connection — the server will attempt to reconnect automatically.
 

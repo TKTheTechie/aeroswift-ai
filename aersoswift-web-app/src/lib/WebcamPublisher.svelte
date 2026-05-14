@@ -22,6 +22,8 @@
   const DETECTION_INTERVAL_MS = 500;
   const MODEL_URL = '/face-api-models';
 
+  let jpegQuality = $state(0.85);
+
   async function loadModels() {
     try {
       loadingMessage = 'Loading face detection models...';
@@ -126,7 +128,7 @@
       }
 
       publishedCount++;
-    }, 'image/jpeg', 0.85);
+    }, 'image/jpeg', jpegQuality);
   }
 
   function drawDetections(detections) {
@@ -207,6 +209,18 @@
         {#if status === 'active' && publishedCount > 0}
           <span class="text-xs text-white/70 font-mono">{publishedCount} frames sent</span>
         {/if}
+        <div class="flex items-center gap-2">
+          <label for="jpeg-quality" class="text-xs text-white/70 font-mono whitespace-nowrap">Quality: {Math.round(jpegQuality * 100)}%</label>
+          <input
+            id="jpeg-quality"
+            type="range"
+            min="0.1"
+            max="1.0"
+            step="0.05"
+            bind:value={jpegQuality}
+            class="w-20 accent-aero-teal"
+          />
+        </div>
         <span class="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-semibold text-white flex items-center gap-1">
           {#if status === 'active'}
             <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
