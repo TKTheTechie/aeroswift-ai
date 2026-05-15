@@ -135,7 +135,7 @@
               clip-rule="evenodd" />
           </svg>
           <span class="text-sm font-semibold text-gray-500 uppercase tracking-wider">
-            ✅ Passport verified · Frequent Flyer {flyerId}
+            ✅ Passenger verified · Frequent Flyer {flyerId}
           </span>
         </div>
 
