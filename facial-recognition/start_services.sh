@@ -17,6 +17,8 @@ pm2 start match-service/index.js --name "match-service"
 echo "Match service started!"
 pm2 start clear-service/index.js --name "clear-service"
 echo "Clear service started!"
+pm2 start "java -jar /home/rocky/aeroswift-ai/pubsubplus-connector-qdrant/dist/pubsubplus-connector-qdrant-1.0.0.jar --spring.config.additional-location=file:/home/rocky/aeroswift-ai/pubsubplus-connector-qdrant/dist/application-demo.yml" --name "pubsubplus-connector-qdrant"
+echo "Qdrant Micro-Integration started!"
 
 # Add more services here in the future, e.g.:
 # pm2 start match-service.js --name "match-service"
