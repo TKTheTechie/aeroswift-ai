@@ -57,8 +57,8 @@ VITE_DEMO_MODE=false
 # Webcam Mode (set to 'true' to use browser webcam instead of ESP32 camera)
 VITE_WEBCAM_MODE=false
 
-# URL for the Qdrant face recognition service
-VITE_QDRANT_SERVICE_URL=http://your-qdrant-service:3001
+# URL for the Qdrant face recognition service proxy (default routes via Vercel serverless proxy)
+VITE_QDRANT_SERVICE_URL=/api/qdrant
 ```
 
 ## Usage
@@ -96,6 +96,9 @@ To run the application without a Solace connection (useful for development and t
 
 ```
 aersoswift-web-app/
+├── api/
+│   └── qdrant/
+│       └── [...path].js           # Vercel serverless proxy → facial recognition service
 ├── src/
 │   ├── lib/
 │   │   ├── common/
@@ -251,7 +254,10 @@ This application is ready to deploy to Vercel. See [DEPLOYMENT.md](./DEPLOYMENT.
 - `VITE_ANALYTICS_TOPIC`
 - `VITE_DEMO_MODE`
 - `VITE_WEBCAM_MODE`
-- `VITE_QDRANT_SERVICE_URL`
+- `VITE_QDRANT_SERVICE_URL` — set to `/api/qdrant` (default) to use the built-in proxy
+- `QDRANT_SERVICE_URL` — server-side URL of the facial recognition backend (e.g. `https://your-ec2-host`); used by the Vercel serverless proxy
+
+> **Note on HTTPS / mixed content:** The `api/qdrant/[...path].js` serverless function proxies all enroll, verify, and match requests to the facial recognition backend server-side, so the browser never makes a direct call to that service. This avoids both mixed-content blocks (HTTP from an HTTPS page) and self-signed certificate errors.
 
 For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md).
 

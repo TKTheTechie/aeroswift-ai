@@ -18,6 +18,14 @@ export default defineConfig({
     exclude: ['@vladmandic/face-api']
   },
   server: {
-    historyApiFallback: true
+    historyApiFallback: true,
+    proxy: {
+      '/api/qdrant': {
+        target: 'https://ec2-18-206-222-103.compute-1.amazonaws.com',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/api\/qdrant/, ''),
+        secure: false
+      }
+    }
   }
 });
