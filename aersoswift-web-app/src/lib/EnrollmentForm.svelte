@@ -287,13 +287,13 @@
     enrolError = '';
     enrolResult = null;
     try {
-      const verifyRes = await fetch(`${QDRANT_SERVICE_URL}/verify/${id}`);
-      const verifyData = await verifyRes.json();
-      if (verifyData.enrolled === true) {
-        enrolError = 'This Flyer ID is already registered. Please use a different Flyer ID.';
-        enrolLoading = false;
-        return;
-      }
+      // const verifyRes = await fetch(`${QDRANT_SERVICE_URL}/verify/${id}`);
+      // const verifyData = await verifyRes.json();
+      // if (verifyData.enrolled === true) {
+      //   enrolError = 'This Flyer ID is already registered. Please use a different Flyer ID.';
+      //   enrolLoading = false;
+      //   return;
+      // }
 
       enrolSteps = [true, true, false, false, false];
 
