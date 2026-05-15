@@ -35,6 +35,9 @@
   let searchFaceState = $state('idle');
   let searchFaceMsg = $state('');
 
+  let enrolFileUploadOpen = $state(false);
+  let searchFileUploadOpen = $state(false);
+
   let modalOpen = $state(false);
   let modalTitle = $state('');
   let modalContent = $state('');
@@ -495,27 +498,7 @@
           </div>
 
           <div class="mb-5">
-            <p class="text-sm font-medium text-gray-700 mb-2 font-body">Option 1: Upload Image</p>
-            <label class="flex flex-col items-center justify-center w-full border-2 border-dashed border-aero-teal/30 rounded-xl p-4 cursor-pointer hover:border-aero-teal/60 hover:bg-aero-bg/30 transition-colors">
-              <span class="text-aero-teal text-2xl mb-1">&#8679;</span>
-              <span class="text-xs text-gray-500 font-body">Click to upload JPEG or PNG</span>
-              <input type="file" accept="image/jpeg,image/png" class="hidden" onchange={handleEnrolFileChange} />
-            </label>
-            {#if enrolPreviewSrc && !enrolCameraActive}
-              <div class="mt-3">
-                <img src={enrolPreviewSrc} alt="Preview" class="max-w-xs max-h-56 rounded-xl border border-gray-200 object-contain" />
-              </div>
-            {/if}
-          </div>
-
-          <div class="flex items-center gap-3 my-4">
-            <div class="flex-1 h-px bg-gray-200"></div>
-            <span class="text-xs text-gray-400 font-body font-medium">OR</span>
-            <div class="flex-1 h-px bg-gray-200"></div>
-          </div>
-
-          <div class="mb-5">
-            <p class="text-sm font-medium text-gray-700 mb-2 font-body">Option 2: Capture with Webcam</p>
+            <p class="text-sm font-medium text-gray-700 mb-2 font-body">Option 1: Capture with Webcam</p>
             <div class="rounded-xl overflow-hidden border-2 transition-all duration-300 {
               enrolFaceState === 'good'
                 ? 'border-green-400 shadow-[0_0_0_4px_rgba(74,222,128,0.2)]'
@@ -574,6 +557,30 @@
                 </div>
               {/if}
             </div>
+          </div>
+
+          <div class="mb-5">
+            <button
+              onclick={() => enrolFileUploadOpen = !enrolFileUploadOpen}
+              class="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-aero-teal transition-colors font-body"
+            >
+              <span class="transition-transform duration-200 {enrolFileUploadOpen ? 'rotate-90' : ''}">&#9654;</span>
+              Option 2: Upload an image file instead
+            </button>
+            {#if enrolFileUploadOpen}
+              <div class="mt-3">
+                <label class="flex flex-col items-center justify-center w-full border-2 border-dashed border-aero-teal/30 rounded-xl p-4 cursor-pointer hover:border-aero-teal/60 hover:bg-aero-bg/30 transition-colors">
+                  <span class="text-aero-teal text-2xl mb-1">&#8679;</span>
+                  <span class="text-xs text-gray-500 font-body">Click to upload JPEG or PNG</span>
+                  <input type="file" accept="image/jpeg,image/png" class="hidden" onchange={handleEnrolFileChange} />
+                </label>
+                {#if enrolPreviewSrc && !enrolCameraActive}
+                  <div class="mt-3">
+                    <img src={enrolPreviewSrc} alt="Preview" class="max-w-xs max-h-56 rounded-xl border border-gray-200 object-contain" />
+                  </div>
+                {/if}
+              </div>
+            {/if}
           </div>
 
           {#if enrolResult}
@@ -643,27 +650,7 @@
           </div>
 
           <div class="mb-5">
-            <p class="text-sm font-medium text-gray-700 mb-2 font-body">Option 1: Upload Image</p>
-            <label class="flex flex-col items-center justify-center w-full border-2 border-dashed border-aero-teal/30 rounded-xl p-4 cursor-pointer hover:border-aero-teal/60 hover:bg-aero-bg/30 transition-colors">
-              <span class="text-aero-teal text-2xl mb-1">&#8679;</span>
-              <span class="text-xs text-gray-500 font-body">Click to upload JPEG or PNG</span>
-              <input type="file" accept="image/jpeg,image/png" class="hidden" onchange={handleSearchFileChange} />
-            </label>
-            {#if searchPreviewSrc && !searchCameraActive}
-              <div class="mt-3">
-                <img src={searchPreviewSrc} alt="Preview" class="max-w-xs max-h-56 rounded-xl border border-gray-200 object-contain" />
-              </div>
-            {/if}
-          </div>
-
-          <div class="flex items-center gap-3 my-4">
-            <div class="flex-1 h-px bg-gray-200"></div>
-            <span class="text-xs text-gray-400 font-body font-medium">OR</span>
-            <div class="flex-1 h-px bg-gray-200"></div>
-          </div>
-
-          <div class="mb-5">
-            <p class="text-sm font-medium text-gray-700 mb-2 font-body">Option 2: Capture with Webcam</p>
+            <p class="text-sm font-medium text-gray-700 mb-2 font-body">Option 1: Capture with Webcam</p>
             <div class="rounded-xl overflow-hidden border-2 transition-all duration-300 {
               searchFaceState === 'good'
                 ? 'border-green-400 shadow-[0_0_0_4px_rgba(74,222,128,0.2)]'
@@ -722,6 +709,30 @@
                 </div>
               {/if}
             </div>
+          </div>
+
+          <div class="mb-5">
+            <button
+              onclick={() => searchFileUploadOpen = !searchFileUploadOpen}
+              class="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-aero-teal transition-colors font-body"
+            >
+              <span class="transition-transform duration-200 {searchFileUploadOpen ? 'rotate-90' : ''}">&#9654;</span>
+              Option 2: Upload an image file instead
+            </button>
+            {#if searchFileUploadOpen}
+              <div class="mt-3">
+                <label class="flex flex-col items-center justify-center w-full border-2 border-dashed border-aero-teal/30 rounded-xl p-4 cursor-pointer hover:border-aero-teal/60 hover:bg-aero-bg/30 transition-colors">
+                  <span class="text-aero-teal text-2xl mb-1">&#8679;</span>
+                  <span class="text-xs text-gray-500 font-body">Click to upload JPEG or PNG</span>
+                  <input type="file" accept="image/jpeg,image/png" class="hidden" onchange={handleSearchFileChange} />
+                </label>
+                {#if searchPreviewSrc && !searchCameraActive}
+                  <div class="mt-3">
+                    <img src={searchPreviewSrc} alt="Preview" class="max-w-xs max-h-56 rounded-xl border border-gray-200 object-contain" />
+                  </div>
+                {/if}
+              </div>
+            {/if}
           </div>
 
           {#if searchResult}
