@@ -2,7 +2,7 @@
 echo "🚀 Starting all PM2 services..."
 
 # Go to repository root
-cd "$(dirname "$0")/.." || exit 1
+#cd "$(dirname "$0")/.." || exit 1
 
 # Load NVM + Node 18
 source ~/.nvm/nvm.sh
