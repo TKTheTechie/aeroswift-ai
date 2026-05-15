@@ -22,7 +22,9 @@
       "Bash(git -C /Users/thomaskunnumpurath/dev/aeroswift-ai diff --stat)",
       "Bash(git -C /Users/thomaskunnumpurath/dev/aeroswift-ai diff aersoswift-web-app/src/App.svelte aersoswift-web-app/src/lib/PassengerInfo.svelte aersoswift-web-app/src/lib/WebcamPublisher.svelte)",
       "Bash(git -C /Users/thomaskunnumpurath/dev/aeroswift-ai diff .claude/settings.json)",
-      "Bash(git -C /Users/thomaskunnumpurath/dev/aeroswift-ai log --oneline -3)"
+      "Bash(git -C /Users/thomaskunnumpurath/dev/aeroswift-ai log --oneline -3)",
+      "Bash(git -C /Users/thomaskunnumpurath/dev/aeroswift-ai log --oneline origin/main..HEAD)",
+      "Bash(git -C /Users/thomaskunnumpurath/dev/aeroswift-ai add aersoswift-web-app/vercel.json .claude/settings.json)"
     ],
     "additionalDirectories": [
       "/Users/thomaskunnumpurath/dev/aeroswift-ai/aersoswift-web-app"
