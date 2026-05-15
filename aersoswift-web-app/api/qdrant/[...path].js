@@ -15,7 +15,7 @@ module.exports = async function handler(req, res) {
     const hasBody = req.method !== 'GET' && req.method !== 'HEAD';
     const body = hasBody ? JSON.stringify(req.body) : undefined;
 
-    console.log(`[qdrant-proxy] ${req.method} ${targetUrl}`);
+    console.log(`[qdrant-proxy] ${req.method} ${targetUrl} | req.url=${req.url} query=${JSON.stringify(req.query)}`);
 
     const result = await new Promise((resolve, reject) => {
       const options = {
