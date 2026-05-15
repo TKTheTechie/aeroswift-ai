@@ -2,5 +2,8 @@
   "buildCommand": "npm run setup-faceapi && npm run build",
   "outputDirectory": "dist",
   "installCommand": "npm install",
-  "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/api/qdrant/:path*", "destination": "https://ec2-18-206-222-103.compute-1.amazonaws.com/:path*" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
 }
