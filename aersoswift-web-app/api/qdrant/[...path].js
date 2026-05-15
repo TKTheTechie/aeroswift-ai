@@ -1,11 +1,11 @@
-import https from 'https';
+const https = require('https');
 
 const TARGET = process.env.QDRANT_SERVICE_URL ?? 'https://ec2-18-206-222-103.compute-1.amazonaws.com';
 
 // Skip TLS verification — EC2 instance uses a self-signed cert
 const agent = new https.Agent({ rejectUnauthorized: false });
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   const pathParts = req.query.path;
   const path = Array.isArray(pathParts) ? pathParts.join('/') : (pathParts ?? '');
 
@@ -45,4 +45,4 @@ export default async function handler(req, res) {
   });
 
   res.status(result.status).json(result.body);
-}
+};
