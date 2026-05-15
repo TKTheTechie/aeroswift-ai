@@ -89,7 +89,7 @@
         />
       </div>
       <div class="flex-[2] min-h-0 overflow-y-auto">
-        <PassengerInfo {faceMatchPending} onMatchReset={() => faceMatchPending = false} />
+        <PassengerInfo {faceMatchPending} onMatchReset={() => faceMatchPending = false} onEnroll={handleEnroll} />
       </div>
     </main>
   </div>

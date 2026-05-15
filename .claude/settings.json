@@ -15,7 +15,14 @@
       "Bash(git -C /Users/thomaskunnumpurath/dev/aeroswift-ai pull)",
       "Bash(git -C /Users/thomaskunnumpurath/dev/aeroswift-ai add aersoswift-web-app/.env.example aersoswift-web-app/README.md aersoswift-web-app/package-lock.json aersoswift-web-app/package.json aersoswift-web-app/src/App.svelte aersoswift-web-app/src/lib/CameraFeed.svelte aersoswift-web-app/src/lib/PassengerInfo.svelte aersoswift-web-app/src/lib/SplashScreen.svelte aersoswift-web-app/src/lib/VideoFeedViewer.svelte aersoswift-web-app/src/lib/WebcamPublisher.svelte aersoswift-web-app/src/lib/common/config.ts aersoswift-web-app/src/lib/EnrollmentForm.svelte aersoswift-web-app/vercel.json aersoswift-web-app/vite.config.js)",
       "Bash(git -C /Users/thomaskunnumpurath/dev/aeroswift-ai commit -m ' *)",
-      "Bash(git -C /Users/thomaskunnumpurath/dev/aeroswift-ai push)"
+      "Bash(git -C /Users/thomaskunnumpurath/dev/aeroswift-ai push)",
+      "Bash(git add *)",
+      "Bash(git push *)",
+      "Bash(npx vercel *)",
+      "Bash(git -C /Users/thomaskunnumpurath/dev/aeroswift-ai diff --stat)",
+      "Bash(git -C /Users/thomaskunnumpurath/dev/aeroswift-ai diff aersoswift-web-app/src/App.svelte aersoswift-web-app/src/lib/PassengerInfo.svelte aersoswift-web-app/src/lib/WebcamPublisher.svelte)",
+      "Bash(git -C /Users/thomaskunnumpurath/dev/aeroswift-ai diff .claude/settings.json)",
+      "Bash(git -C /Users/thomaskunnumpurath/dev/aeroswift-ai log --oneline -3)"
     ],
     "additionalDirectories": [
       "/Users/thomaskunnumpurath/dev/aeroswift-ai/aersoswift-web-app"

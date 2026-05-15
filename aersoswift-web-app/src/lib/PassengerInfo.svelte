@@ -9,7 +9,7 @@
     PASSENGER_LOOKUP_RESPONSE_TOPIC
   } from './common/config';
 
-  let { faceMatchPending = false, onMatchReset } = $props();
+  let { faceMatchPending = false, onMatchReset, onEnroll } = $props();
 
   let isMatching = $state(false);
 
@@ -107,12 +107,23 @@
   <div class="p-6 min-h-[120px] flex items-center justify-center">
 
     {#if errorMessage}
-      <div class="flex items-center gap-3 text-red-500">
-        <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-        </svg>
-        <span class="text-base font-medium">{errorMessage}</span>
+      <div class="flex flex-col items-center gap-4 text-center">
+        <div class="flex items-center gap-3 text-red-500">
+          <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+          <span class="text-base font-medium">{errorMessage}</span>
+        </div>
+        {#if errorMessage === 'Passenger Not Found'}
+          <p class="text-sm text-gray-500">This passenger is not enrolled in the system.</p>
+          <button
+            onclick={() => onEnroll?.()}
+            class="px-5 py-2 bg-aero-teal hover:bg-aero-dark text-white text-sm font-semibold rounded-full transition-colors"
+          >
+            Enroll Passenger
+          </button>
+        {/if}
       </div>
 
     {:else if flightInfo}

@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { v4 as uuidv4 } from 'uuid';
   import QRCode from 'qrcode';
-  import { APP_CONFIG, QDRANT_SERVICE_URL, FACE_MATCH_RESULT_TOPIC, FACE_SCAN_RESET_TOPIC } from './common/config';
+  import { APP_CONFIG, QDRANT_SERVICE_URL, FACE_MATCH_RESULT_TOPIC, FACE_MATCH_ERROR_TOPIC, FACE_SCAN_RESET_TOPIC } from './common/config';
 
   let { solaceClient, onMatchRequest, onMatchReset } = $props();
 
@@ -146,7 +146,11 @@
             body: JSON.stringify({ imageBase64 })
           });
           const data = await res.json();
-          solaceClient.publishControl(FACE_MATCH_RESULT_TOPIC, data);
+          if (data.MATCH === false && data.confidence === 0) {
+            solaceClient.publishControl(FACE_MATCH_ERROR_TOPIC, { error: 'Passenger Not Found' });
+          } else {
+            solaceClient.publishControl(FACE_MATCH_RESULT_TOPIC, data);
+          }
         } catch (err) {
           console.error('Face match HTTP request failed:', err);
         }
