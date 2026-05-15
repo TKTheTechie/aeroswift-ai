@@ -23,6 +23,7 @@
       actions: [
         { label: 'Webcam Feed', handler: () => onWebcam?.() },
         { label: 'Camera Feed', handler: () => onEnter?.(), disabled: true, tooltip: 'Camera Feed Requires an ESP32 WiFi Camera to function' },
+        { label: 'Passport Check In', handler: () => {}, disabled: true, tooltip: 'Passport Checkin requires a connected NFC Reader to function' },
       ],
     },
   ];
