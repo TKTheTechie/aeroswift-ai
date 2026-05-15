@@ -17,13 +17,16 @@
     {
       number: 2,
       label: 'Check In',
-      title: 'Camera Check-In',
-      description: 'Verify your identity using a live camera feed or your device webcam.',
-      icon: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />`,
+      title: 'Camera or Passport Check-In',
+      description: 'Verify your identity via webcam, an ESP32 camera feed, or NFC passport scan.',
+      icons: [
+        `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />`,
+        `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c0 1.306.835 2.417 2 2.83M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />`,
+      ],
       actions: [
-        { label: 'Webcam Feed', handler: () => onWebcam?.() },
-        { label: 'Camera Feed', handler: () => onEnter?.(), disabled: true, tooltip: 'Camera Feed Requires an ESP32 WiFi Camera to function' },
-        { label: 'Passport Check In', handler: () => {}, disabled: true, tooltip: 'Passport Checkin requires a connected NFC Reader to function' },
+        { label: 'Webcam Feed', handler: () => onWebcam?.(), icon: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.069A1 1 0 0121 8.845v6.31a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />` },
+        { label: 'Camera Feed', handler: () => onEnter?.(), disabled: true, tooltip: 'Camera Feed Requires an ESP32 WiFi Camera to function', icon: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />` },
+        { label: 'Passport Check In', handler: () => {}, disabled: true, tooltip: 'Passport Checkin requires a connected NFC Reader to function', icon: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c0 1.306.835 2.417 2 2.83M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />` },
       ],
     },
   ];
@@ -75,11 +78,13 @@
             <span class="text-white/40 text-xs uppercase tracking-widest font-medium">{step.label}</span>
           </div>
 
-          <!-- Icon -->
-          <div class="w-7 h-7 mb-2 text-aero-teal/70 group-hover:text-aero-teal transition-colors duration-300">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-full h-full">
-              {@html step.icon}
-            </svg>
+          <!-- Icon(s) -->
+          <div class="flex items-center gap-1.5 mb-2 text-aero-teal/70 group-hover:text-aero-teal transition-colors duration-300">
+            {#each (step.icons ?? [step.icon]) as iconPath}
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-7 h-7 shrink-0">
+                {@html iconPath}
+              </svg>
+            {/each}
           </div>
 
           <!-- Title & description -->
@@ -102,8 +107,15 @@
                       ? 'text-white/30 bg-white/5 border-white/10 cursor-not-allowed'
                       : 'text-aero-teal bg-aero-teal/10 hover:bg-aero-teal/20 border-aero-teal/20 hover:border-aero-teal/50 group/btn'}"
                 >
-                  {action.label}
-                  <svg class="w-3 h-3 {action.disabled ? '' : 'transition-transform duration-200 group-hover/btn:translate-x-0.5'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <span class="flex items-center gap-1.5">
+                    {#if action.icon}
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-3.5 h-3.5 shrink-0">
+                        {@html action.icon}
+                      </svg>
+                    {/if}
+                    {action.label}
+                  </span>
+                  <svg class="w-3 h-3 shrink-0 {action.disabled ? '' : 'transition-transform duration-200 group-hover/btn:translate-x-0.5'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
