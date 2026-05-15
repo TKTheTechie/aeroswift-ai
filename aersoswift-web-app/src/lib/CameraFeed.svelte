@@ -20,7 +20,7 @@
 
   onMount(async () => {
     const viewerUrl = `${window.location.origin}/VideoFeed`;
-    qrCodeDataUrl = await QRCode.toDataURL(viewerUrl, { width: 200, margin: 1, color: { dark: '#0d3b34', light: '#ffffff' } });
+    qrCodeDataUrl = await QRCode.toDataURL(viewerUrl, { width: 300, margin: 1, color: { dark: '#0d3b34', light: '#ffffff' } });
 
     try {
       await solaceClient.subscribe(VIDEO_TOPIC, handleVideoMessage);
@@ -185,7 +185,7 @@
       <div class="flex items-center gap-3">
         {#if qrCodeDataUrl}
           <div class="flex items-center gap-2 bg-white/10 rounded-xl px-2 py-1">
-            <img src={qrCodeDataUrl} alt="Scan to watch feed" class="w-10 h-10 rounded" />
+            <img src={qrCodeDataUrl} alt="Scan to watch feed" class="w-20 h-20 rounded" />
             <span class="text-[10px] text-white/70 font-mono leading-tight">/VideoFeed</span>
           </div>
         {/if}

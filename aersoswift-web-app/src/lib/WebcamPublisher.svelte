@@ -39,7 +39,7 @@
     return btoa(binary);
   }
 
-  let jpegQuality = $state(0.85);
+  let jpegQuality = $state(0.5);
   let videoAspectRatio = $state(null);
 
   async function loadModels() {
@@ -217,7 +217,7 @@
     });
 
     const viewerUrl = `${window.location.origin}/VideoFeed?sessionId=${sessionId}`;
-    qrCodeDataUrl = await QRCode.toDataURL(viewerUrl, { width: 200, margin: 1, color: { dark: '#0d3b34', light: '#ffffff' } });
+    qrCodeDataUrl = await QRCode.toDataURL(viewerUrl, { width: 300, margin: 1, color: { dark: '#0d3b34', light: '#ffffff' } });
 
     await loadModels();
     await startCamera();
@@ -234,7 +234,7 @@
   {#if qrCodeDataUrl}
     <div class="shrink-0 bg-white rounded-2xl shadow-xl border-2 border-aero-light/30 p-4 flex flex-col items-center gap-2 self-start mt-0">
       <p class="text-xs font-semibold text-aero-dark uppercase tracking-widest">Scan to Watch</p>
-      <img src={qrCodeDataUrl} alt="QR code to view this feed" class="w-36 h-36 rounded-lg" />
+      <img src={qrCodeDataUrl} alt="QR code to view this feed" class="w-52 h-52 rounded-lg" />
       <p class="text-[10px] text-gray-400 font-mono text-center break-all max-w-[9rem]">/VideoFeed?sessionId={sessionId.slice(0, 8)}…</p>
     </div>
   {/if}
