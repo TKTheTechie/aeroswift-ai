@@ -16,5 +16,8 @@ export default defineConfig({
   assetsInclude: ['**/*.glb', '**/*.gltf'],
   optimizeDeps: {
     exclude: ['@vladmandic/face-api']
+  },
+  server: {
+    historyApiFallback: true
   }
 });

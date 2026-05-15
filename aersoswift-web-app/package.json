@@ -23,6 +23,7 @@
     "@threlte/extras": "^9.7.1",
     "@vladmandic/face-api": "^1.7.15",
     "meshoptimizer": "^1.0.1",
+    "qrcode": "^1.5.4",
     "solclientjs": "^10.18.2",
     "three": "^0.182.0",
     "uuid": "^13.0.0"

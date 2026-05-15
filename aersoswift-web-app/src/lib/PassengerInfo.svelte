@@ -3,7 +3,6 @@
   import { SolaceVideoClient } from './common/solace';
   import {
     APP_CONFIG,
-    FACE_MATCH_REQUEST_TOPIC,
     FACE_MATCH_RESULT_TOPIC,
     FACE_MATCH_ERROR_TOPIC,
     FACE_SCAN_RESET_TOPIC,
@@ -13,6 +12,19 @@
   let { faceMatchPending = false, onMatchReset } = $props();
 
   let isMatching = $state(false);
+
+  $effect(() => {
+    if (faceMatchPending) {
+      isMatching = true;
+      flyerId = '';
+      passengerInfo = '';
+      flightInfo = '';
+      flightStatus = '';
+      recommendation = null;
+      airportMap = null;
+      errorMessage = '';
+    }
+  });
   let flyerId = $state('');
   let passengerInfo = $state('');
   let flightInfo = $state('');
@@ -26,17 +38,6 @@
   onMount(async () => {
     try {
       await solaceClient.connect();
-
-      solaceClient.subscribeToTopic(FACE_MATCH_REQUEST_TOPIC, (_payload) => {
-        isMatching = true;
-        flyerId = '';
-        passengerInfo = '';
-        flightInfo = '';
-        flightStatus = '';
-        recommendation = null;
-        airportMap = null;
-        errorMessage = '';
-      });
 
       solaceClient.subscribeToTopic(FACE_MATCH_ERROR_TOPIC, (payload) => {
         errorMessage = payload?.error || '';

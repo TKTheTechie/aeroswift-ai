@@ -1,6 +1,7 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
-  import { APP_CONFIG, FACE_MATCH_REQUEST_TOPIC, PASSENGER_LOOKUP_RESPONSE_TOPIC } from './common/config';
+  import QRCode from 'qrcode';
+  import { APP_CONFIG, FACE_MATCH_RESULT_TOPIC, PASSENGER_LOOKUP_RESPONSE_TOPIC } from './common/config';
 
   let { solaceClient } = $props();
 
@@ -12,11 +13,15 @@
   let hasReceivedFrame = $state(false);
   let faceDetected = $state(false);
   let analyticsData = $state(null);
+  let qrCodeDataUrl = $state(null);
 
   const VIDEO_TOPIC = APP_CONFIG.videoTopic;
   const ANALYTICS_TOPIC = APP_CONFIG.analyticsTopic;
 
   onMount(async () => {
+    const viewerUrl = `${window.location.origin}/VideoFeed`;
+    qrCodeDataUrl = await QRCode.toDataURL(viewerUrl, { width: 200, margin: 1, color: { dark: '#0d3b34', light: '#ffffff' } });
+
     try {
       await solaceClient.subscribe(VIDEO_TOPIC, handleVideoMessage);
       isActive = true;
@@ -25,8 +30,8 @@
       solaceClient.subscribeToTopic(ANALYTICS_TOPIC, handleAnalyticsMessage);
       console.log(`Subscribed to ${ANALYTICS_TOPIC}`);
 
-      solaceClient.subscribeToTopic(FACE_MATCH_REQUEST_TOPIC, (payload) => {
-        console.log('FACE_MATCH_REQUEST received:', payload);
+      solaceClient.subscribeToTopic(FACE_MATCH_RESULT_TOPIC, (payload) => {
+        console.log('FACE_MATCH_RESULT received:', payload);
         faceDetected = true;
       });
 
@@ -177,7 +182,13 @@
           <span class="text-sm text-white/80 font-mono">{VIDEO_TOPIC}</span>
         {/if}
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-3">
+        {#if qrCodeDataUrl}
+          <div class="flex items-center gap-2 bg-white/10 rounded-xl px-2 py-1">
+            <img src={qrCodeDataUrl} alt="Scan to watch feed" class="w-10 h-10 rounded" />
+            <span class="text-[10px] text-white/70 font-mono leading-tight">/VideoFeed</span>
+          </div>
+        {/if}
         <span class="text-xs font-medium text-white/90">Status:</span>
         <span class="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-semibold text-white flex items-center gap-1">
           {#if isActive}

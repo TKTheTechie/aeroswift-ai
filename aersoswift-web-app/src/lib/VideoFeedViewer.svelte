@@ -2,14 +2,14 @@
   import { onMount, onDestroy } from 'svelte';
   import { APP_CONFIG } from './common/config';
 
-  let { solaceClient, onBack } = $props();
+  let { solaceClient, onBack, sessionId = null } = $props();
 
   let imgElement;
   let isActive = $state(false);
   let hasReceivedFrame = $state(false);
   let connectionError = $state('');
 
-  const VIDEO_TOPIC = APP_CONFIG.videoTopic;
+  const VIDEO_TOPIC = sessionId ? `${APP_CONFIG.videoTopic}/${sessionId}` : APP_CONFIG.videoTopic;
 
   onMount(async () => {
     try {
@@ -86,6 +86,9 @@
         {:else if connectionError}
           <div class="w-3 h-3 bg-red-400 rounded-full"></div>
           <span class="text-sm font-medium text-red-500">Error</span>
+        {:else if isActive}
+          <div class="w-3 h-3 bg-green-400 rounded-full"></div>
+          <span class="text-sm font-medium text-gray-600">Subscribed</span>
         {:else}
           <div class="w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></div>
           <span class="text-sm font-medium text-gray-600">Connecting</span>
@@ -112,6 +115,9 @@
           {:else if connectionError}
             <span class="w-2 h-2 bg-red-400 rounded-full"></span>
             Error
+          {:else if isActive}
+            <span class="w-2 h-2 bg-green-400 rounded-full"></span>
+            Waiting for Feed
           {:else}
             <span class="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
             Connecting...
@@ -140,11 +146,11 @@
                 <p class="text-red-400 font-medium text-lg">{connectionError}</p>
                 <p class="text-gray-400 text-sm">Check Solace connection settings</p>
               {:else if isActive}
-                <p class="text-aero-light font-medium text-lg">Waiting for Video Feed</p>
+                <p class="text-aero-light font-medium text-lg">Subscribed — Waiting for Feed</p>
                 <p class="text-gray-400 text-sm font-mono text-xs">{VIDEO_TOPIC}</p>
               {:else}
-                <p class="text-yellow-400 font-medium text-lg">Connecting to Feed...</p>
-                <p class="text-gray-400 text-sm">Establishing Solace connection</p>
+                <p class="text-yellow-400 font-medium text-lg">Connecting to Solace...</p>
+                <p class="text-gray-400 text-sm">Establishing broker connection</p>
               {/if}
             </div>
           </div>

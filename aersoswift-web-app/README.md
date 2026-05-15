@@ -5,6 +5,8 @@ A real-time airport passenger recognition and boarding assistance web applicatio
 ## Features
 
 - **Real-time Camera Feed**: Live video streaming from ESP32 cameras via Solace PubSub
+- **Facial Recognition**: Face enrollment and real-time identity matching via Qdrant vector DB
+- **Webcam Mode**: Use your device webcam instead of an ESP32 camera for face capture
 - **Passenger Information Display**: Shows passenger details including loyalty status, flight info, and boarding group
 - **People Analytics**: Real-time people detection and counting from camera feeds
 - **Modern UI**: Built with Svelte 5 and styled with Tailwind CSS
@@ -51,6 +53,12 @@ VITE_ANALYTICS_TOPIC=aeroswift/camera/analytics/gate1
 
 # Demo Mode (set to 'true' to run without Solace connection)
 VITE_DEMO_MODE=false
+
+# Webcam Mode (set to 'true' to use browser webcam instead of ESP32 camera)
+VITE_WEBCAM_MODE=false
+
+# URL for the Qdrant face recognition service
+VITE_QDRANT_SERVICE_URL=http://your-qdrant-service:3001
 ```
 
 ## Usage
@@ -95,7 +103,11 @@ aersoswift-web-app/
 │   │   │   ├── solace.ts          # Solace PubSub+ client
 │   │   │   └── types.ts           # TypeScript type definitions
 │   │   ├── CameraFeed.svelte      # Camera feed component
-│   │   └── PassengerInfo.svelte   # Passenger information component
+│   │   ├── PassengerInfo.svelte   # Passenger information component
+│   │   ├── EnrollmentForm.svelte  # Face enrollment & matching UI
+│   │   ├── WebcamPublisher.svelte # Webcam capture & face match
+│   │   ├── VideoFeedViewer.svelte # Video feed viewer
+│   │   └── SplashScreen.svelte    # Animated 3D splash/landing screen
 │   ├── App.svelte                 # Main application component
 │   ├── app.css                    # Global styles and Tailwind config
 │   └── main.js                    # Application entry point
@@ -238,6 +250,8 @@ This application is ready to deploy to Vercel. See [DEPLOYMENT.md](./DEPLOYMENT.
 - `VITE_VIDEO_TOPIC`
 - `VITE_ANALYTICS_TOPIC`
 - `VITE_DEMO_MODE`
+- `VITE_WEBCAM_MODE`
+- `VITE_QDRANT_SERVICE_URL`
 
 For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md).
 
