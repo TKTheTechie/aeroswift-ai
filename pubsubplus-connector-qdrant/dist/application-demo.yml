@@ -76,7 +76,7 @@ logging:  # Logging configuration. For more info: https://docs.spring.io/spring-
     com.solace.spring.cloud.stream.binder: INFO # Enables TRACE logs for Solace and JMS binders
     com.solacecoe.spring.cloud.stream.binders: TRACE # Enables TRACE logs for Solace and JMS binders
   file:
-    name: myapp.log  # base log file name
+    name: /home/rocky/aeroswift-ai/pubsubplus-connector-qdrant/dist/myapp.log  # base log file name
   logback:
     rollingpolicy:  # Logback file rolling policy
       file-name-pattern: "${LOG_FILE}.%d{yyyy-MM-dd}.%i.gz"  # Pattern for rolled-over log file names. Example: Rolls the log file into an archive once every day. `%i` is reset to `0` at the start of the day.
