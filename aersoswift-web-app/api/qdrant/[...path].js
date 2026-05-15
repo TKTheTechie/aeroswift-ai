@@ -39,7 +39,7 @@ module.exports = async function handler(req, res) {
           } catch (e) {
             resolve({
               status: proxyRes.statusCode,
-              body: { error: 'Non-JSON response from backend', proxiedMethod: req.method, proxiedPath: targetUrl, raw },
+              body: { error: 'Non-JSON response from backend', proxiedMethod: req.method, proxiedPath: targetUrl, reqUrl: req.url, reqQuery: req.query, raw },
             });
           }
         });
