@@ -3,6 +3,10 @@ package com.solacecoe.spring.cloud.stream.binders.qdrant.outbound;
 import com.solacecoe.spring.cloud.stream.binders.qdrant.properties.QdrantProducerProperties;
 import com.solace.connector.core.io.header.ConnectorBinderHeaders;
 import com.solace.connector.core.io.outbound.PublishAcknowledgmentCallback;
+import io.grpc.ManagedChannel;
+
+
+import io.grpc.ManagedChannelBuilder;
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.QdrantGrpcClient;
 import io.qdrant.client.grpc.Common.PointId;
@@ -216,7 +220,24 @@ public class QdrantOutboundMessageHandler implements MessageHandler, Lifecycle {
 			int port = Objects.requireNonNullElse(props.getQdrantPort(), 6334);
 			boolean tls = Boolean.TRUE.equals(props.getUseTls());
 
-			qdrantClient = new QdrantClient(QdrantGrpcClient.newBuilder(host, port, tls).build());
+			// ==================== FIXED: gRPC Keep-Alive (prevents 3-hour idle shutdown) ====================
+			ManagedChannelBuilder<?> channelBuilder = ManagedChannelBuilder.forAddress(host, port)
+					.keepAliveTime(60, TimeUnit.SECONDS)      // ping every 60 seconds
+					.keepAliveTimeout(20, TimeUnit.SECONDS)
+					.keepAliveWithoutCalls(true);             // keep pinging even when idle
+
+			if (!tls) {
+				channelBuilder.usePlaintext();
+			}
+
+			ManagedChannel channel = channelBuilder.build();
+
+			qdrantClient = new QdrantClient(
+					QdrantGrpcClient.newBuilder(channel, true)   // true = shutdown channel when client closes
+							.build()
+			);
+
+			//qdrantClient = new QdrantClient(QdrantGrpcClient.newBuilder(host, port, tls).build());
 
 			// ==================== AUTO CREATE COLLECTION ====================
 			try {
