@@ -41,11 +41,22 @@ const SOLACE_TOPIC = 'aeroswift/enroll/flyer';
 //    connectTimeoutInMsecs: 10000,
 //    transportDownNotification: true,
 //  });
+/*
   session = solace.SolclientFactory.createSession({
     url: "ws://ec2-54-85-138-239.compute-1.amazonaws.com:8008",           // ← CHANGE TO YOUR SOLACE HOST
     vpnName: "nats-connector",                    // ← CHANGE IF NEEDED
     userName: "natsmi",                   // ← CHANGE
     password: "nats",                   // ← CHANGE
+    connectTimeoutInMsecs: 10000,
+    transportDownNotification: true,
+  });
+*/
+
+  session = solace.SolclientFactory.createSession({
+    url: "wss://mr-connection-m1g97ppys8a.messaging.solace.cloud:443",           // ← CHANGE TO YOUR SOLACE HOST
+    vpnName: "aeroswift-ai",                    // ← CHANGE IF NEEDED
+    userName: "solace-cloud-client",                   // ← CHANGE
+    password: "hkvt5hvttma95ndihauhi65odj",                   // ← CHANGE
     connectTimeoutInMsecs: 10000,
     transportDownNotification: true,
   });
