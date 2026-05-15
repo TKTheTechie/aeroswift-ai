@@ -7,7 +7,7 @@ module.exports = async function handler(req, res) {
     // Skip TLS verification — EC2 instance uses a self-signed cert
     const agent = new https.Agent({ rejectUnauthorized: false });
 
-    const pathParts = req.query.path;
+    const pathParts = req.query['...path'];
     const path = Array.isArray(pathParts) ? pathParts.join('/') : (pathParts || '');
 
     const url = new URL(`${TARGET}/${path}`);
