@@ -11,18 +11,20 @@ module.exports = async function handler(req, res) {
     const path = Array.isArray(pathParts) ? pathParts.join('/') : (pathParts || '');
 
     const url = new URL(`${TARGET}/${path}`);
-    const body = req.method !== 'GET' && req.method !== 'HEAD'
-      ? JSON.stringify(req.body)
-      : undefined;
+    const targetUrl = url.pathname + url.search;
+    const hasBody = req.method !== 'GET' && req.method !== 'HEAD';
+    const body = hasBody ? JSON.stringify(req.body) : undefined;
+
+    console.log(`[qdrant-proxy] ${req.method} ${targetUrl}`);
 
     const result = await new Promise((resolve, reject) => {
       const options = {
         hostname: url.hostname,
         port: url.port || 443,
-        path: url.pathname + url.search,
+        path: targetUrl,
         method: req.method,
         headers: {
-          'Content-Type': 'application/json',
+          ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
           ...(body ? { 'Content-Length': Buffer.byteLength(body) } : {}),
         },
         agent,
@@ -35,7 +37,10 @@ module.exports = async function handler(req, res) {
           try {
             resolve({ status: proxyRes.statusCode, body: JSON.parse(raw) });
           } catch (e) {
-            resolve({ status: proxyRes.statusCode, body: { error: 'Non-JSON response from backend', raw } });
+            resolve({
+              status: proxyRes.statusCode,
+              body: { error: 'Non-JSON response from backend', proxiedMethod: req.method, proxiedPath: targetUrl, raw },
+            });
           }
         });
       });
