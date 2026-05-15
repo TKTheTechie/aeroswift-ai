@@ -24,7 +24,8 @@ echo "✅ Clear service started!"
 # Start Java service using the wrapper script we created
 pm2 start /home/rocky/aeroswift-ai/pubsubplus-connector-qdrant/dist/start-pubsubplus.sh \
   --name "pubsubplus-connector-qdrant" \
-  --interpreter none
+  --interpreter none \
+  --cwd /home/rocky/aeroswift-ai/pubsubplus-connector-qdrant/dist
 echo "✅ Qdrant Micro-Integration (Java) started!"
 
 # Save the current list so all services auto-start after server reboot
