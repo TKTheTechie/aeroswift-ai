@@ -259,6 +259,23 @@ The Agent Mesh UI is available at `http://localhost:8000`.
 
 ---
 
+### Event Portal representation
+
+https://solace-sso.solace.cloud/ep/designer/domains/fs5jpvbbgi4/graph?domainName=(AI-Designer%20-%20sCQVDMi2)%20AeroSwift%20AI
+
+<img width="803" height="617" alt="image" src="https://github.com/user-attachments/assets/1808358e-b37e-4480-a380-32776852ddf9" />
+
+
+## Applications
+
+- **Camera Streaming Server**: Connects to an ESP32 camera, runs YOLOv8 face detection, publishes video frames and analytics
+- **Match Service**: Compares detected faces against enrolled passengers using vector similarity search
+- **Enroll Service**: Enrolls new passenger faces into the facial recognition database
+- **Passport Reader Service**: Handles passport OCR, NFC chip reading, and face enrollment from the browser
+- **Web App**: Svelte web application, the gate operator interface
+- **Agent Mesh Gateway**: Solace Agent Mesh gateway that triggers AI agent passenger lookup
+
+
 ## Topics and Message Flow
 
 All topic names are defined in `common-properties/.env.example` and loaded by each service at startup. The values below are the defaults.
