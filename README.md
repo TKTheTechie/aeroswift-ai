@@ -4,7 +4,7 @@
   <img src="logo.jpg" alt="AeroSwift AI" width="200"/>
 </p>
 
-This demo showcases how data is **Liberated** from a video stream, **Streamed & Filtered** over Solace to multiple subscribers, and a micro-integration that interacts with a vector database **Reacts** to it. Results are **Democratized** over the Event Portal.
+This demo showcases how data is **Liberated** from a video stream, **Streamed & Filtered** over Solace to multiple subscribers, and a micro-integration that interacts with a vector database **Reacts** to it. All Events are also **Democratized** over the Event Portal.
 
 A complete real-time airport passenger recognition and boarding assistance system consisting of a camera streaming server with AI-powered people detection, a modern web application for displaying live feeds and passenger information, an event-driven AI agent mesh for passenger assistance, a facial recognition service for automated passenger identification, and a passport reader for on-the-spot passenger enrollment via MRZ OCR and NFC chip reading.
 

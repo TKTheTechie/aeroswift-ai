@@ -47,7 +47,7 @@
       <span class="text-aero-teal font-semibold">Streamed &amp; Filtered</span> over Solace to multiple subscribers,
       and a micro-integration that interacts with a vector database
       <span class="text-aero-teal font-semibold">Reacts</span> to it.
-      Results are <span class="text-aero-teal font-semibold">Democratized</span> over the Event Portal.
+      All events are also <span class="text-aero-teal font-semibold">Democratized</span> over the Event Portal.
     </p>
   </div>
 

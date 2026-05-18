@@ -24,7 +24,8 @@
       "Bash(git -C /Users/thomaskunnumpurath/dev/aeroswift-ai diff .claude/settings.json)",
       "Bash(git -C /Users/thomaskunnumpurath/dev/aeroswift-ai log --oneline -3)",
       "Bash(git -C /Users/thomaskunnumpurath/dev/aeroswift-ai log --oneline origin/main..HEAD)",
-      "Bash(git -C /Users/thomaskunnumpurath/dev/aeroswift-ai add aersoswift-web-app/vercel.json .claude/settings.json)"
+      "Bash(git -C /Users/thomaskunnumpurath/dev/aeroswift-ai add aersoswift-web-app/vercel.json .claude/settings.json)",
+      "Bash(git pull *)"
     ],
     "additionalDirectories": [
       "/Users/thomaskunnumpurath/dev/aeroswift-ai/aersoswift-web-app"
