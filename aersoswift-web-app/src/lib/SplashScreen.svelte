@@ -42,6 +42,13 @@
     <p class="mt-1 text-sm md:text-base text-white/70 font-medium tracking-widest uppercase">
       Next-Generation Passenger Recognition
     </p>
+    <p class="mt-3 text-xs md:text-sm text-white/55 max-w-2xl mx-auto leading-relaxed">
+      Data is <span class="text-aero-teal font-semibold">Liberated</span> from a video stream,
+      <span class="text-aero-teal font-semibold">Streamed &amp; Filtered</span> over Solace to multiple subscribers,
+      and a micro-integration that interacts with a vector database
+      <span class="text-aero-teal font-semibold">Reacts</span> to it.
+      Results are <span class="text-aero-teal font-semibold">Democratized</span> over the Event Portal.
+    </p>
   </div>
 
   <!-- 3D Model -->
