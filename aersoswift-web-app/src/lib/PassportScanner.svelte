@@ -11,20 +11,28 @@
   let stream = null;
 
   // Flow state
-  let step = $state('capture'); // capture | confirm | nfc_ready | nfc | enrolling | done
+  let step = $state('nfc_ready'); // capture | confirm | nfc_ready | nfc | enrolling | done
   let message = $state('');
   let error = $state('');
-  let ocrData = $state(null);
+  let ocrData = $state({
+    passportNumber: '144174084',
+    dateOfBirth: '831003',
+    expiryDate: '331020',
+    surname: 'GUILLOT',
+    givenNames: 'LAURENT YANN FRANCK'
+  });
   let nfcData = $state(null);
   let passportPhoto = $state(null);
   let nfcPollInterval = null;
 
   onMount(async () => {
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      if (videoElement) videoElement.srcObject = stream;
-    } catch (e) {
-      error = 'Could not access webcam';
+    if (step === 'capture') {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        if (videoElement) videoElement.srcObject = stream;
+      } catch (e) {
+        error = 'Could not access webcam';
+      }
     }
   });
 
