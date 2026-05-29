@@ -3,6 +3,7 @@
   import CameraFeed from './lib/CameraFeed.svelte';
   import WebcamPublisher from './lib/WebcamPublisher.svelte';
   import PassengerInfo from './lib/PassengerInfo.svelte';
+  import PassportScanner from './lib/PassportScanner.svelte';
   import SplashScreen from './lib/SplashScreen.svelte';
   import VideoFeedViewer from './lib/VideoFeedViewer.svelte';
   import EnrollmentForm from './lib/EnrollmentForm.svelte';
