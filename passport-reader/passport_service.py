@@ -206,7 +206,8 @@ def enroll():
 
     photo_path = nfc_state.get("photo_path")
     nfc_data   = nfc_state.get("data", {})
-    flyer_id   = nfc_data.get("passportNumber", "UNKNOWN")
+#   flyer_id   = nfc_data.get("passportNumber", "UNKNOWN")
+    flyer_id   = "F0001"
 
     if not photo_path or not os.path.exists(photo_path):
         return jsonify({"error": "Passport photo not found — NFC read may not have extracted it"}), 400
