@@ -8,7 +8,8 @@ const EmotionDetector = require('./emotion-detector');
 const path = require('path');
 const { expand } = require('dotenv-expand');
 expand(require('dotenv').config({
-  path: [path.resolve(__dirname, '../common-properties/.env'), path.resolve(__dirname, '.env')]
+  path: [path.resolve(__dirname, '../common-properties/.env'), path.resolve(__dirname, '.env')],
+  override: true
 }));
 
 class ESP32VideoStreamer {

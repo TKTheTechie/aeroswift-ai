@@ -454,6 +454,32 @@ export class SolaceVideoClient {
     this.publishControl(topic, payload);
   }
 
+  unsubscribeFromTopic(topic: string): void {
+    if (DEMO_MODE || (this.session && 'demo' in this.session && this.session.demo)) {
+      this.topicCallbacks.delete(topic);
+      return;
+    }
+
+    if (!this.session || !this.isConnected || 'demo' in this.session) {
+      this.topicCallbacks.delete(topic);
+      return;
+    }
+
+    try {
+      if (this.topicCallbacks.has(topic)) {
+        this.topicCallbacks.delete(topic);
+        if (this.subscriptions.has(topic)) {
+          const destination = solace.SolclientFactory.createTopicDestination(topic);
+          this.session.unsubscribe(destination, true, topic, 10000);
+          this.subscriptions.delete(topic);
+        }
+        console.log(`Unsubscribed from topic: ${topic}`);
+      }
+    } catch (error: unknown) {
+      console.error('Failed to unsubscribe from topic:', error);
+    }
+  }
+
   unsubscribe(topic: string): void {
     if (DEMO_MODE || (this.session && 'demo' in this.session && this.session.demo)) {
       console.log(`Demo mode: Unsubscribing from ${topic}`);

@@ -18,7 +18,12 @@ export const QDRANT_SERVICE_URL = import.meta.env.VITE_QDRANT_SERVICE_URL || 'ht
 
 export const WEBCAM_MODE = import.meta.env.VITE_WEBCAM_MODE === 'true';
 
+export const WEBCAM_SESSION_ID_ENABLED = import.meta.env.VITE_WEBCAM_SESSION_ID_ENABLED === 'true';
+
 export const FACE_MATCH_RESULT_TOPIC = import.meta.env.VITE_FACE_MATCH_RESULT_TOPIC || 'aeroswift/terminal1/v1/face/match/result';
 export const PASSENGER_LOOKUP_RESPONSE_TOPIC = import.meta.env.VITE_PASSENGER_LOOKUP_RESPONSE_TOPIC || 'aeroswift/terminal1/v1/passenger/lookup/response';
 export const FACE_SCAN_RESET_TOPIC = import.meta.env.VITE_FACE_SCAN_RESET_TOPIC || 'aeroswift/terminal1/v1/face/scan/reset';
 export const FACE_MATCH_ERROR_TOPIC = import.meta.env.VITE_FACE_MATCH_ERROR_TOPIC || 'aeroswift/terminal1/v1/face/match/error';
+
+export const BOARDING_BOARDED_TOPIC = import.meta.env.VITE_BOARDING_BOARDED_TOPIC || 'aeroswift/terminal1/v1/boarding/boarded';
+export const BOARDING_NOT_BOARDED_TOPIC = import.meta.env.VITE_BOARDING_NOT_BOARDED_TOPIC || 'aeroswift/terminal1/v1/boarding/not-boarded';
