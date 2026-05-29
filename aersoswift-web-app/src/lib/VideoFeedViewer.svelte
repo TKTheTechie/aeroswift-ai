@@ -1,6 +1,6 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
-  import { APP_CONFIG } from './common/config';
+  import { APP_CONFIG, DEMO_MODE, BOARDING_BOARDED_TOPIC, BOARDING_NOT_BOARDED_TOPIC } from './common/config';
 
   let { solaceClient, onBack, sessionId = null } = $props();
 
@@ -11,6 +11,9 @@
 
   const VIDEO_TOPIC = sessionId ? `${APP_CONFIG.videoTopic}/${sessionId}` : APP_CONFIG.videoTopic;
 
+  // Boarding floating feedback
+  let floatingItems = $state([]);
+
   onMount(async () => {
     try {
       await solaceClient.subscribe(VIDEO_TOPIC, handleVideoMessage);
@@ -20,6 +23,11 @@
       connectionError = 'Failed to connect to video feed';
       isActive = false;
     }
+
+    if (!DEMO_MODE) {
+      solaceClient.subscribeToTopic(BOARDING_BOARDED_TOPIC, () => handleBoardingEvent('boarded'));
+      solaceClient.subscribeToTopic(BOARDING_NOT_BOARDED_TOPIC, () => handleBoardingEvent('not-boarded'));
+    }
   });
 
   onDestroy(async () => {
@@ -27,6 +35,10 @@
       await solaceClient.unsubscribe(VIDEO_TOPIC);
     } catch (error) {
       console.error('VideoFeedViewer: Error during cleanup:', error);
+    }
+    if (!DEMO_MODE) {
+      solaceClient.unsubscribeFromTopic(BOARDING_BOARDED_TOPIC);
+      solaceClient.unsubscribeFromTopic(BOARDING_NOT_BOARDED_TOPIC);
     }
   });
 
@@ -52,6 +64,24 @@
         hasReceivedFrame = false;
         if (imgElement) imgElement.style.display = 'none';
       }
+    }
+  }
+
+  function handleBoardingEvent(type) {
+    const id = Date.now() + Math.random();
+    const x = 15 + Math.random() * 70;
+    floatingItems = [...floatingItems, { id, type, x }];
+    setTimeout(() => {
+      floatingItems = floatingItems.filter(item => item.id !== id);
+    }, 2000);
+  }
+
+  function onBoardButtonClick(type) {
+    if (DEMO_MODE) {
+      handleBoardingEvent(type);
+    } else {
+      const topic = type === 'boarded' ? BOARDING_BOARDED_TOPIC : BOARDING_NOT_BOARDED_TOPIC;
+      solaceClient.publishControl(topic, { type });
     }
   }
 </script>
@@ -97,76 +127,124 @@
     </div>
   </header>
 
-  <!-- Video Feed -->
-  <main class="flex-1 container mx-auto px-4 py-6">
-    <div class="bg-white rounded-2xl shadow-xl overflow-hidden border-2 border-aero-light/30">
-      <!-- Feed Header -->
-      <div class="bg-gradient-to-r from-aero-teal to-aero-dark px-6 py-3 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <h2 class="text-xl font-display font-bold text-white">Camera Feed</h2>
-          {#if hasReceivedFrame}
-            <span class="text-sm text-white/80 font-mono">{VIDEO_TOPIC}</span>
-          {/if}
-        </div>
-        <span class="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-semibold text-white flex items-center gap-1">
-          {#if isActive && hasReceivedFrame}
-            <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-            Active
-          {:else if connectionError}
-            <span class="w-2 h-2 bg-red-400 rounded-full"></span>
-            Error
-          {:else if isActive}
-            <span class="w-2 h-2 bg-green-400 rounded-full"></span>
-            Waiting for Feed
-          {:else}
-            <span class="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
-            Connecting...
-          {/if}
-        </span>
-      </div>
+  <!-- Main content -->
+  <main class="flex-1 container mx-auto px-4 py-6 flex flex-col gap-4">
 
-      <!-- Video Area -->
-      <div class="aspect-video bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 relative overflow-hidden">
-        <img
-          bind:this={imgElement}
-          class="absolute inset-0 w-full h-full object-cover"
-          style="display: none;"
-          alt="Live video feed"
-        />
+    <!-- Video row -->
+    <div class="flex gap-4 items-center justify-center">
 
-        {#if !hasReceivedFrame}
-          <div class="absolute inset-0 flex items-center justify-center">
-            <div class="text-center space-y-4">
-              <div class="w-24 h-24 mx-auto bg-aero-teal/20 rounded-full flex items-center justify-center backdrop-blur-sm border-2 border-aero-teal/50">
-                <svg class="w-12 h-12 text-aero-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-              </div>
-              {#if connectionError}
-                <p class="text-red-400 font-medium text-lg">{connectionError}</p>
-                <p class="text-gray-400 text-sm">Check Solace connection settings</p>
-              {:else if isActive}
-                <p class="text-aero-light font-medium text-lg">Subscribed — Waiting for Feed</p>
-                <p class="text-gray-400 text-sm font-mono text-xs">{VIDEO_TOPIC}</p>
-              {:else}
-                <p class="text-yellow-400 font-medium text-lg">Connecting to Solace...</p>
-                <p class="text-gray-400 text-sm">Establishing broker connection</p>
-              {/if}
-            </div>
+      <!-- Video card -->
+      <div class="flex-1 max-w-4xl bg-white rounded-2xl shadow-xl overflow-hidden border-2 border-aero-light/30">
+        <!-- Feed Header -->
+        <div class="bg-gradient-to-r from-aero-teal to-aero-dark px-6 py-3 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <h2 class="text-xl font-display font-bold text-white">Camera Feed</h2>
+            {#if hasReceivedFrame}
+              <span class="text-sm text-white/80 font-mono">{VIDEO_TOPIC}</span>
+            {/if}
           </div>
-        {/if}
-
-        <!-- Scanning line -->
-        <div class="absolute inset-0 pointer-events-none">
-          <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-aero-teal to-transparent animate-pulse"></div>
+          <span class="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-semibold text-white flex items-center gap-1">
+            {#if isActive && hasReceivedFrame}
+              <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+              Active
+            {:else if connectionError}
+              <span class="w-2 h-2 bg-red-400 rounded-full"></span>
+              Error
+            {:else if isActive}
+              <span class="w-2 h-2 bg-green-400 rounded-full"></span>
+              Waiting for Feed
+            {:else}
+              <span class="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
+              Connecting...
+            {/if}
+          </span>
         </div>
 
-        <!-- Corner brackets -->
-        <div class="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-aero-teal/60"></div>
-        <div class="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-aero-teal/60"></div>
-        <div class="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 border-aero-teal/60"></div>
-        <div class="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-aero-teal/60"></div>
+        <!-- Video Area -->
+        <div class="aspect-video bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 relative overflow-hidden">
+          <img
+            bind:this={imgElement}
+            class="absolute inset-0 w-full h-full object-cover"
+            style="display: none;"
+            alt="Live video feed"
+          />
+
+          {#if !hasReceivedFrame}
+            <div class="absolute inset-0 flex items-center justify-center">
+              <div class="text-center space-y-4">
+                <div class="w-24 h-24 mx-auto bg-aero-teal/20 rounded-full flex items-center justify-center backdrop-blur-sm border-2 border-aero-teal/50">
+                  <svg class="w-12 h-12 text-aero-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                {#if connectionError}
+                  <p class="text-red-400 font-medium text-lg">{connectionError}</p>
+                  <p class="text-gray-400 text-sm">Check Solace connection settings</p>
+                {:else if isActive}
+                  <p class="text-aero-light font-medium text-lg">Subscribed — Waiting for Feed</p>
+                  <p class="text-gray-400 text-sm font-mono text-xs">{VIDEO_TOPIC}</p>
+                {:else}
+                  <p class="text-yellow-400 font-medium text-lg">Connecting to Solace...</p>
+                  <p class="text-gray-400 text-sm">Establishing broker connection</p>
+                {/if}
+              </div>
+            </div>
+          {/if}
+
+          <!-- Scanning line -->
+          <div class="absolute inset-0 pointer-events-none">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-aero-teal to-transparent animate-pulse"></div>
+          </div>
+
+          <!-- Corner brackets -->
+          <div class="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-aero-teal/60"></div>
+          <div class="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-aero-teal/60"></div>
+          <div class="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 border-aero-teal/60"></div>
+          <div class="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-aero-teal/60"></div>
+
+          <!-- Floating boarding event emojis -->
+          {#each floatingItems as item (item.id)}
+            <div
+              class="absolute pointer-events-none z-20 text-5xl floating-emoji"
+              style="left: {item.x}%; bottom: 35%;"
+            >
+              {item.type === 'boarded' ? '👍' : '👎'}
+            </div>
+          {/each}
+        </div>
       </div>
+
     </div>
+
+    <!-- BOARD / NOT BOARD action buttons -->
+    <div class="flex gap-4 max-w-2xl mx-auto w-full">
+      <button
+        onclick={() => onBoardButtonClick('not-boarded')}
+        class="flex-1 py-5 bg-red-700 hover:bg-red-600 active:bg-red-800 text-white font-bold text-lg rounded-2xl flex items-center justify-center gap-3 shadow-lg hover:shadow-red-900/40 transition-all duration-200 border-2 border-red-500/50"
+      >
+        <span class="text-2xl">🚫</span>
+        <span class="tracking-widest uppercase">Deny Boarding</span>
+      </button>
+      <button
+        onclick={() => onBoardButtonClick('boarded')}
+        class="flex-1 py-5 bg-green-700 hover:bg-green-600 active:bg-green-800 text-white font-bold text-lg rounded-2xl flex items-center justify-center gap-3 shadow-lg hover:shadow-green-900/40 transition-all duration-200 border-2 border-green-500/50"
+      >
+        <span class="text-2xl">✅</span>
+        <span class="tracking-widest uppercase">Allow Boarding</span>
+      </button>
+    </div>
+
   </main>
 </div>
+
+<style>
+  @keyframes floatUp {
+    0%   { transform: translateY(0)     scale(1);   opacity: 1; }
+    60%  { transform: translateY(-50px) scale(1.2); opacity: 0.9; }
+    100% { transform: translateY(-100px) scale(0.8); opacity: 0; }
+  }
+
+  .floating-emoji {
+    animation: floatUp 2s ease-out forwards;
+  }
+</style>

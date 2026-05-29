@@ -2,15 +2,21 @@
   import { onMount, onDestroy } from 'svelte';
   import { v4 as uuidv4 } from 'uuid';
   import QRCode from 'qrcode';
-  import { APP_CONFIG, QDRANT_SERVICE_URL, FACE_MATCH_RESULT_TOPIC, FACE_MATCH_ERROR_TOPIC, FACE_SCAN_RESET_TOPIC } from './common/config';
+  import {
+    APP_CONFIG, QDRANT_SERVICE_URL,
+    FACE_MATCH_RESULT_TOPIC, FACE_MATCH_ERROR_TOPIC, FACE_SCAN_RESET_TOPIC,
+    WEBCAM_SESSION_ID_ENABLED, DEMO_MODE,
+    BOARDING_BOARDED_TOPIC, BOARDING_NOT_BOARDED_TOPIC
+  } from './common/config';
 
   let { solaceClient, onMatchRequest, onMatchReset } = $props();
 
   let faceapi = null;
 
-  const sessionId = uuidv4();
-  const sessionVideoTopic = `${APP_CONFIG.videoTopic}/${sessionId}`;
+  const sessionId = WEBCAM_SESSION_ID_ENABLED ? uuidv4() : null;
+  const sessionVideoTopic = sessionId ? `${APP_CONFIG.videoTopic}/${sessionId}` : APP_CONFIG.videoTopic;
 
+  // Camera state
   let videoEl = $state(null);
   let canvasEl = $state(null);
   let stream = $state(null);
@@ -22,12 +28,102 @@
   let errorMessage = $state(null);
   let status = $state('loading');
   let qrCodeDataUrl = $state(null);
+  let jpegQuality = $state(0.5);
+  let videoAspectRatio = $state(null);
 
   let detectionIntervalId = null;
   let faceDetectionActive = true;
   let framePublishInFlight = false;
   const DETECTION_INTERVAL_MS = 500;
   const MODEL_URL = '/face-api-models';
+
+  // Boarding session state
+  let scanState = $state('idle'); // 'idle' | 'scanning' | 'result'
+  let countdownSeconds = $state(20);
+  let boardedCount = $state(0);
+  let notBoardedCount = $state(0);
+  let floatingItems = $state([]);
+  let countdownIntervalId = null;
+  let boardingSubscriptionsActive = false;
+
+  const boardingVerdict = $derived(
+    boardedCount > notBoardedCount ? 'allow' :
+    notBoardedCount > boardedCount ? 'deny' :
+    'tie'
+  );
+
+  const countdownColor = $derived(
+    countdownSeconds > 10 ? 'text-green-400 border-green-400' :
+    countdownSeconds > 5  ? 'text-yellow-400 border-yellow-400' :
+                            'text-red-400 border-red-400'
+  );
+
+  $effect(() => {
+    if (faceCount > 0 && scanState === 'idle' && status === 'active') {
+      startBoardingSession();
+    }
+  });
+
+  function startBoardingSession() {
+    scanState = 'scanning';
+    countdownSeconds = 20;
+
+    if (!DEMO_MODE) {
+      solaceClient.subscribeToTopic(BOARDING_BOARDED_TOPIC, () => handleBoardingEvent('boarded'));
+      solaceClient.subscribeToTopic(BOARDING_NOT_BOARDED_TOPIC, () => handleBoardingEvent('not-boarded'));
+      boardingSubscriptionsActive = true;
+    }
+
+    countdownIntervalId = setInterval(() => {
+      countdownSeconds--;
+      if (countdownSeconds <= 0) {
+        clearInterval(countdownIntervalId);
+        countdownIntervalId = null;
+        scanState = 'result';
+      }
+    }, 1000);
+  }
+
+  function handleBoardingEvent(type) {
+    if (type === 'boarded') {
+      boardedCount++;
+    } else {
+      notBoardedCount++;
+    }
+    const id = Date.now() + Math.random();
+    const x = 15 + Math.random() * 70;
+    floatingItems = [...floatingItems, { id, type, x }];
+    setTimeout(() => {
+      floatingItems = floatingItems.filter(item => item.id !== id);
+    }, 2000);
+  }
+
+  function resetBoardingSession() {
+    if (countdownIntervalId) {
+      clearInterval(countdownIntervalId);
+      countdownIntervalId = null;
+    }
+    if (boardingSubscriptionsActive) {
+      solaceClient.unsubscribeFromTopic(BOARDING_BOARDED_TOPIC);
+      solaceClient.unsubscribeFromTopic(BOARDING_NOT_BOARDED_TOPIC);
+      boardingSubscriptionsActive = false;
+    }
+    scanState = 'idle';
+    countdownSeconds = 20;
+    boardedCount = 0;
+    notBoardedCount = 0;
+    floatingItems = [];
+    solaceClient.publishControl(FACE_SCAN_RESET_TOPIC, { reset: true, timestamp: new Date().toISOString() });
+  }
+
+  function onBoardButtonClick(type) {
+    if (DEMO_MODE) {
+      handleBoardingEvent(type);
+    } else {
+      const topic = type === 'boarded' ? BOARDING_BOARDED_TOPIC : BOARDING_NOT_BOARDED_TOPIC;
+      solaceClient.publishControl(topic, { type });
+    }
+  }
 
   function arrayBufferToBase64(buffer) {
     const bytes = new Uint8Array(buffer);
@@ -38,9 +134,6 @@
     }
     return btoa(binary);
   }
-
-  let jpegQuality = $state(0.5);
-  let videoAspectRatio = $state(null);
 
   async function loadModels() {
     try {
@@ -120,8 +213,6 @@
     if (!videoEl || videoEl.videoWidth === 0) return;
     if (framePublishInFlight) return;
 
-    // Snapshot and close the gate synchronously before any async work so
-    // subsequent intervals that fire before toBlob resolves cannot slip through.
     const sendMatchRequest = faceDetectionActive;
     faceDetectionActive = false;
     framePublishInFlight = true;
@@ -159,7 +250,6 @@
       }
 
       framePublishInFlight = false;
-
       publishedCount++;
     }, 'image/jpeg', jpegQuality);
   }
@@ -170,7 +260,6 @@
 
     detections.forEach(det => {
       const { x: rawX, y, width, height } = det.box;
-      // Mirror x to match the CSS-flipped video
       const x = canvasEl.width - rawX - width;
       const score = Math.round(det.score * 100);
       const bracketLen = Math.min(width, height) * 0.18;
@@ -220,7 +309,9 @@
       }
     });
 
-    const viewerUrl = `${window.location.origin}/VideoFeed?sessionId=${sessionId}`;
+    const viewerUrl = sessionId
+      ? `${window.location.origin}/VideoFeed?sessionId=${sessionId}`
+      : `${window.location.origin}/VideoFeed`;
     qrCodeDataUrl = await QRCode.toDataURL(viewerUrl, { width: 300, margin: 1, color: { dark: '#0d3b34', light: '#ffffff' } });
 
     await loadModels();
@@ -229,26 +320,26 @@
 
   onDestroy(() => {
     stopCamera();
+    resetBoardingSession();
   });
 </script>
 
-<div class="h-full flex justify-center gap-4 items-start">
+<div class="h-full flex items-center justify-center gap-4">
 
-  <!-- QR Code panel -->
+  <!-- QR Code panel — left side -->
   {#if qrCodeDataUrl}
-    <div class="shrink-0 bg-white rounded-2xl shadow-xl border-2 border-aero-light/30 p-4 flex flex-col items-center gap-2 self-start mt-0">
+    <div class="shrink-0 self-center bg-white rounded-2xl shadow-xl border-2 border-aero-light/30 p-4 flex flex-col items-center gap-2">
       <p class="text-xs font-semibold text-aero-dark uppercase tracking-widest">Scan to Watch</p>
-      <img src={qrCodeDataUrl} alt="QR code to view this feed" class="w-52 h-52 rounded-lg" />
-      <p class="text-[10px] text-gray-400 font-mono text-center break-all max-w-[9rem]">/VideoFeed?sessionId={sessionId.slice(0, 8)}…</p>
+      <img src={qrCodeDataUrl} alt="QR code to view this feed" class="w-48 h-48 rounded-lg block" />
+      <p class="text-[10px] text-gray-400 font-mono text-center">{sessionId ? `/VideoFeed?sessionId=${sessionId.slice(0, 8)}…` : '/VideoFeed'}</p>
     </div>
   {/if}
 
-  <div
-    class="flex flex-col h-full bg-white rounded-2xl shadow-xl overflow-hidden border-2 {faceCount > 0 && status === 'active' ? 'border-green-400' : 'border-aero-light/30'}"
-    style={videoAspectRatio ? `aspect-ratio: ${videoAspectRatio}` : 'width: 100%'}
-  >
+  <!-- Video Feed Card — square, height-constrained -->
+  <div class="flex flex-col bg-white rounded-2xl shadow-xl overflow-hidden border-2 {faceCount > 0 && status === 'active' ? 'border-green-400' : 'border-aero-light/30'} transition-colors duration-300" style="height: 100%; aspect-ratio: 1 / 1;">
 
-    <div class="bg-gradient-to-r from-aero-teal to-aero-dark px-4 py-2 flex items-center gap-3 min-w-0">
+    <!-- Header bar -->
+    <div class="bg-gradient-to-r from-aero-teal to-aero-dark px-4 py-2 flex items-center gap-3 min-w-0 shrink-0">
       <h2 class="text-base font-display font-bold text-white shrink-0">Webcam Feed</h2>
       <div class="flex items-center gap-2 ml-auto shrink-0">
         {#if status === 'active' && publishedCount > 0}
@@ -282,6 +373,7 @@
       </div>
     </div>
 
+    <!-- Video area -->
     <div class="flex-1 min-h-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 relative overflow-hidden">
       <div class="absolute inset-0">
 
@@ -344,12 +436,109 @@
         <div class="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 border-aero-teal/60"></div>
         <div class="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-aero-teal/60"></div>
 
+        <!-- NOT BOARD counter overlay (bottom-left) -->
+        {#if scanState !== 'idle'}
+          <div class="absolute bottom-12 left-4 z-10 bg-black/60 backdrop-blur-sm rounded-xl px-3 py-2 text-center border border-red-500/40 transition-all duration-300">
+            <div class="text-2xl font-bold text-red-400 font-mono leading-none">{notBoardedCount}</div>
+            <div class="text-[9px] text-red-400/80 uppercase tracking-widest mt-0.5">NOT BOARD</div>
+          </div>
+
+          <!-- BOARD counter overlay (bottom-right) -->
+          <div class="absolute bottom-12 right-4 z-10 bg-black/60 backdrop-blur-sm rounded-xl px-3 py-2 text-center border border-green-500/40 transition-all duration-300">
+            <div class="text-2xl font-bold text-green-400 font-mono leading-none">{boardedCount}</div>
+            <div class="text-[9px] text-green-400/80 uppercase tracking-widest mt-0.5">BOARD</div>
+          </div>
+        {/if}
+
         <!-- Face detection glow -->
         {#if faceCount > 0 && status === 'active'}
           <div class="absolute inset-0 border-2 border-aero-teal pointer-events-none animate-pulse"></div>
         {/if}
+
+        <!-- Countdown timer overlay -->
+        {#if scanState === 'scanning'}
+          <div class="absolute top-4 left-1/2 -translate-x-1/2 pointer-events-none z-10">
+            <div class="w-16 h-16 rounded-full border-4 {countdownColor} bg-black/60 flex items-center justify-center backdrop-blur-sm transition-colors duration-500">
+              <span class="font-mono font-bold text-xl {countdownColor.split(' ')[0]}">{countdownSeconds}</span>
+            </div>
+          </div>
+        {/if}
+
+        <!-- Floating boarding event emojis -->
+        {#each floatingItems as item (item.id)}
+          <div
+            class="absolute pointer-events-none z-20 text-5xl floating-emoji"
+            style="left: {item.x}%; bottom: 35%;"
+          >
+            {item.type === 'boarded' ? '👍' : '👎'}
+          </div>
+        {/each}
+
+        <!-- Result overlay -->
+        {#if scanState === 'result'}
+          <div class="absolute inset-0 bg-black/70 flex items-center justify-center z-30 backdrop-blur-sm">
+            <div class="text-center bg-gray-900/95 rounded-2xl p-8 border-2 {boardingVerdict === 'allow' ? 'border-green-500' : boardingVerdict === 'deny' ? 'border-red-500' : 'border-yellow-500'} shadow-2xl mx-4">
+
+              <!-- Verdict banner -->
+              {#if boardingVerdict === 'allow'}
+                <div class="text-5xl mb-3">✅</div>
+                <p class="text-2xl font-bold text-green-400 uppercase tracking-widest mb-1">Allow Boarding</p>
+              {:else if boardingVerdict === 'deny'}
+                <div class="text-5xl mb-3">🚫</div>
+                <p class="text-2xl font-bold text-red-400 uppercase tracking-widest mb-1">Deny Boarding</p>
+              {:else}
+                <div class="text-5xl mb-3">⚖️</div>
+                <p class="text-2xl font-bold text-yellow-400 uppercase tracking-widest mb-1">Tied Vote</p>
+              {/if}
+
+              <!-- Vote tally -->
+              <div class="flex gap-10 justify-center my-5">
+                <div class="text-center">
+                  <div class="text-3xl mb-1">👍</div>
+                  <div class="text-3xl font-bold text-green-400 font-mono">{boardedCount}</div>
+                  <div class="text-[10px] text-green-400/70 uppercase tracking-widest mt-1">BOARD</div>
+                </div>
+                <div class="w-px bg-gray-700 self-stretch"></div>
+                <div class="text-center">
+                  <div class="text-3xl mb-1">👎</div>
+                  <div class="text-3xl font-bold text-red-400 font-mono">{notBoardedCount}</div>
+                  <div class="text-[10px] text-red-400/70 uppercase tracking-widest mt-1">NOT BOARD</div>
+                </div>
+              </div>
+
+              <button
+                onclick={resetBoardingSession}
+                class="px-8 py-3 bg-aero-teal text-white font-semibold rounded-full hover:bg-aero-dark transition-colors text-sm tracking-wide"
+              >
+                Scan Next Passenger
+              </button>
+            </div>
+          </div>
+        {/if}
       </div>
     </div>
+
   </div>
+
+  <!-- QR Code panel — right side (mirror of left) -->
+  {#if qrCodeDataUrl}
+    <div class="shrink-0 self-center bg-white rounded-2xl shadow-xl border-2 border-aero-light/30 p-4 flex flex-col items-center gap-2">
+      <p class="text-xs font-semibold text-aero-dark uppercase tracking-widest">Scan to Watch</p>
+      <img src={qrCodeDataUrl} alt="QR code to view this feed" class="w-48 h-48 rounded-lg block" />
+      <p class="text-[10px] text-gray-400 font-mono text-center">{sessionId ? `/VideoFeed?sessionId=${sessionId.slice(0, 8)}…` : '/VideoFeed'}</p>
+    </div>
+  {/if}
+
 </div>
 
+<style>
+  @keyframes floatUp {
+    0%   { transform: translateY(0)    scale(1);    opacity: 1; }
+    60%  { transform: translateY(-50px) scale(1.2); opacity: 0.9; }
+    100% { transform: translateY(-100px) scale(0.8); opacity: 0; }
+  }
+
+  .floating-emoji {
+    animation: floatUp 2s ease-out forwards;
+  }
+</style>

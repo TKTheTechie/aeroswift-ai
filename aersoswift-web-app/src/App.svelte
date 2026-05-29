@@ -6,6 +6,7 @@
   import SplashScreen from './lib/SplashScreen.svelte';
   import VideoFeedViewer from './lib/VideoFeedViewer.svelte';
   import EnrollmentForm from './lib/EnrollmentForm.svelte';
+  import PassportScanner from './lib/PassportScanner.svelte';
   import { SolaceVideoClient } from './lib/common/solace';
   import { APP_CONFIG } from './lib/common/config';
 
@@ -49,12 +50,18 @@
     currentView = 'videoFeed';
   }
 
+  function handlePassportScan() {
+    currentView = 'passportScanner';
+  }
+
 </script>
 
 {#if currentView === 'splash'}
-  <SplashScreen onEnroll={handleEnroll} onEnter={handleEnter} onWebcam={handleWebcamPublisher} onVideoFeed={handleVideoFeed} />
+  <SplashScreen onEnroll={handleEnroll} onEnter={handleEnter} onWebcam={handleWebcamPublisher} onVideoFeed={handleVideoFeed} onPassportScan={handlePassportScan} />
 {:else if currentView === 'enrollment'}
   <EnrollmentForm onBack={() => currentView = 'splash'} />
+{:else if currentView === 'passportScanner'}
+  <PassportScanner onEnrolled={() => currentView = 'splash'} />
 {:else if currentView === 'videoFeed'}
   {#if solaceReady}
     <VideoFeedViewer {solaceClient} onBack={() => currentView = 'splash'} sessionId={urlSessionId} />
