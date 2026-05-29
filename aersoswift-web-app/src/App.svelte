@@ -7,7 +7,6 @@
   import SplashScreen from './lib/SplashScreen.svelte';
   import VideoFeedViewer from './lib/VideoFeedViewer.svelte';
   import EnrollmentForm from './lib/EnrollmentForm.svelte';
-  import PassportScanner from './lib/PassportScanner.svelte';
   import { SolaceVideoClient } from './lib/common/solace';
   import { APP_CONFIG } from './lib/common/config';
 
