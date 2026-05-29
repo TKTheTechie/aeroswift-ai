@@ -1,5 +1,7 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
+  import { Canvas } from '@threlte/core';
+  import Scene from './Scene.svelte';
   import { APP_CONFIG, DEMO_MODE, BOARDING_BOARDED_TOPIC, BOARDING_NOT_BOARDED_TOPIC } from './common/config';
 
   let { solaceClient, onBack, sessionId = null } = $props();
@@ -8,6 +10,8 @@
   let isActive = $state(false);
   let hasReceivedFrame = $state(false);
   let connectionError = $state('');
+  let showSplash = $state(true);
+  let isSceneLoading = $state(true);
 
   const VIDEO_TOPIC = sessionId ? `${APP_CONFIG.videoTopic}/${sessionId}` : APP_CONFIG.videoTopic;
 
@@ -86,6 +90,53 @@
   }
 </script>
 
+{#if showSplash}
+<div class="fixed inset-0 bg-gradient-to-br from-aero-dark via-[#0d2b26] to-aero-dark z-50 overflow-hidden">
+
+  <!-- 3D Model — full screen background -->
+  <div class="absolute inset-0">
+    {#if isSceneLoading}
+      <div class="absolute inset-0 flex items-center justify-center z-10">
+        <div class="text-center space-y-3">
+          <div class="w-12 h-12 border-4 border-white/20 border-t-aero-teal rounded-full animate-spin mx-auto"></div>
+          <p class="text-white/60 text-sm">Loading 3D Scene</p>
+        </div>
+      </div>
+    {/if}
+    <Canvas>
+      <Scene bind:isLoading={isSceneLoading} cameraZ={6.5} />
+    </Canvas>
+  </div>
+
+  <!-- Header — top -->
+  <div class="absolute top-0 inset-x-0 z-10 text-center pt-10 pb-12 bg-gradient-to-b from-aero-dark/90 to-transparent pointer-events-none">
+    <h1 class="text-2xl md:text-3xl font-display font-bold text-white drop-shadow-2xl tracking-tight leading-snug px-4">
+      AeroSwift <span class="text-aero-teal">AI</span><br/>
+      <span class="text-lg md:text-xl font-medium text-white/80">Live Video Feed Viewer</span>
+    </h1>
+  </div>
+
+  <!-- Bottom — Enter button -->
+  <div class="absolute bottom-0 inset-x-0 z-10 flex flex-col items-center gap-4 px-6 pb-10 pt-16 bg-gradient-to-t from-aero-dark/90 to-transparent">
+    <button
+      onclick={() => showSplash = false}
+      class="group w-full max-w-xs inline-flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-aero-teal to-aero-dark hover:from-aero-light hover:to-aero-teal text-white font-bold text-lg rounded-full shadow-[0_0_30px_rgba(26,188,156,0.4)] hover:shadow-[0_0_50px_rgba(26,188,156,0.6)] transition-all duration-300 border border-aero-teal/30"
+    >
+      <svg class="w-6 h-6 flex-shrink-0 transition-transform duration-300 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+      </svg>
+      Enter Experience
+    </button>
+    <button
+      onclick={onBack}
+      class="text-white/30 hover:text-white/70 text-sm transition-colors duration-200 underline underline-offset-2"
+    >
+      ← Go back
+    </button>
+  </div>
+
+</div>
+{:else}
 <div class="min-h-screen bg-gradient-to-br from-aero-bg via-white to-aero-bg flex flex-col">
   <!-- Header -->
   <header class="bg-white shadow-md border-b-4 border-aero-teal">
@@ -236,6 +287,7 @@
 
   </main>
 </div>
+{/if}
 
 <style>
   @keyframes floatUp {
