@@ -15,6 +15,7 @@
   const isVideoFeedRoute = window.location.pathname === '/VideoFeed';
 
   let currentView = $state(isVideoFeedRoute ? 'videoFeed' : 'splash');
+  let skipVideoFeedSplash = $state(isVideoFeedRoute);
   let faceMatchPending = $state(false);
   let solaceReady = $state(false);
 
@@ -47,6 +48,7 @@
   }
 
   function handleVideoFeed() {
+    skipVideoFeedSplash = true;
     currentView = 'videoFeed';
   }
 
@@ -64,7 +66,7 @@
   <PassportScanner onEnrolled={() => currentView = 'splash'} />
 {:else if currentView === 'videoFeed'}
   {#if solaceReady}
-    <VideoFeedViewer {solaceClient} onBack={() => currentView = 'splash'} sessionId={urlSessionId} />
+    <VideoFeedViewer {solaceClient} onBack={() => currentView = 'splash'} sessionId={urlSessionId} skipSplash={skipVideoFeedSplash} />
   {:else}
     <div class="min-h-screen bg-gradient-to-br from-aero-bg via-white to-aero-bg flex items-center justify-center">
       <div class="text-center space-y-4">

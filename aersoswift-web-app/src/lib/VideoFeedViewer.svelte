@@ -4,13 +4,13 @@
   import Scene from './Scene.svelte';
   import { APP_CONFIG, DEMO_MODE, BOARDING_BOARDED_TOPIC, BOARDING_NOT_BOARDED_TOPIC } from './common/config';
 
-  let { solaceClient, onBack, sessionId = null } = $props();
+  let { solaceClient, onBack, sessionId = null, skipSplash = false } = $props();
 
   let imgElement;
   let isActive = $state(false);
   let hasReceivedFrame = $state(false);
   let connectionError = $state('');
-  let showSplash = $state(true);
+  let showSplash = $state(!skipSplash);
   let isSceneLoading = $state(true);
 
   const VIDEO_TOPIC = sessionId ? `${APP_CONFIG.videoTopic}/${sessionId}` : APP_CONFIG.videoTopic;
