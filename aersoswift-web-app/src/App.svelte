@@ -15,7 +15,7 @@
   const isVideoFeedRoute = window.location.pathname === '/VideoFeed';
 
   let currentView = $state(isVideoFeedRoute ? 'videoFeed' : 'splash');
-  let skipVideoFeedSplash = $state(isVideoFeedRoute);
+  let skipVideoFeedSplash = $state(false);
   let faceMatchPending = $state(false);
   let solaceReady = $state(false);
 
