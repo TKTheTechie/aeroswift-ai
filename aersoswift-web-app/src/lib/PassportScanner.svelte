@@ -1,7 +1,7 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
 
-  const PASSPORT_SERVICE_URL = 'http://localhost:3003';
+  const PASSPORT_SERVICE_URL = 'https://ec2-18-206-222-103.compute-1.amazonaws.com';
 
   let { onEnrolled } = $props();
 

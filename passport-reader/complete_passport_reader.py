@@ -20,7 +20,7 @@ import json
 import ssl
 
 # ── Config ────────────────────────────────────────────────────────────────────
-ENROLL_SERVICE_URL = "http://localhost:3001/enroll"
+ENROLL_SERVICE_URL = "https://ec2-18-206-222-103.compute-1.amazonaws.com/enroll"
 
 SOLACE_HOST     = "mr-connection-xaa92v5e29b.messaging.solace.cloud"
 SOLACE_PORT     = 8883
