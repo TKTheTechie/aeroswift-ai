@@ -39,7 +39,7 @@
 
   // Boarding session state
   let scanState = $state('idle'); // 'idle' | 'scanning' | 'result'
-  let countdownSeconds = $state(20);
+  let countdownSeconds = $state(60);
   let boardedCount = $state(0);
   let notBoardedCount = $state(0);
   let floatingItems = $state([]);
