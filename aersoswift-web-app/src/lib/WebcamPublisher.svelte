@@ -85,6 +85,7 @@
   }
 
   function handleBoardingEvent(type) {
+    if (scanState !== 'scanning') return;
     if (type === 'boarded') {
       boardedCount++;
     } else {
