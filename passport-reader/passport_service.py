@@ -25,13 +25,15 @@ import json
 import ssl
 import threading
 import requests as http_requests
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 app = Flask(__name__)
 CORS(app)
 
 SCRIPT_DIR          = os.path.dirname(os.path.abspath(__file__))
-ENROLL_SERVICE_URL  = "http://localhost:3001/enroll"
-SOLACE_HOST         = "mr-connection-m1g97ppys8a.messaging.solace.cloud:8883"
+ENROLL_SERVICE_URL  = "https://ec2-18-206-222-103.compute-1.amazonaws.com/enroll"
+SOLACE_HOST         = "mr-connection-xaa92v5e29b.messaging.solace.cloud"
 SOLACE_PORT         = 8883
 SOLACE_USERNAME     = "solace-cloud-client"
 SOLACE_PASSWORD     = "hkvt5hvttma95ndihauhi65odj"
@@ -230,7 +232,7 @@ def enroll():
         res = http_requests.post(ENROLL_SERVICE_URL, json={
             "flyerId":     flyer_id,
             "imageBase64": image_b64
-        }, timeout=10)
+        }, timeout=10, verify=False)
 
         if res.status_code != 200:
             return jsonify({"error": f"Enroll failed: {res.text}"}), 500
