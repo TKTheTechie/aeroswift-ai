@@ -66,7 +66,7 @@
 
   function startBoardingSession() {
     scanState = 'scanning';
-    countdownSeconds = 20;
+    countdownSeconds = 60;
 
     if (!DEMO_MODE) {
       solaceClient.subscribeToTopic(BOARDING_BOARDED_TOPIC, () => handleBoardingEvent('boarded'));
@@ -109,7 +109,7 @@
       boardingSubscriptionsActive = false;
     }
     scanState = 'idle';
-    countdownSeconds = 20;
+    countdownSeconds = 60;
     boardedCount = 0;
     notBoardedCount = 0;
     floatingItems = [];
