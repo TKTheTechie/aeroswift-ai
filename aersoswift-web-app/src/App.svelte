@@ -15,6 +15,7 @@
   const isVideoFeedRoute = window.location.pathname === '/VideoFeed';
 
   let currentView = $state(isVideoFeedRoute ? 'videoFeed' : 'splash');
+  let skipVideoFeedSplash = $state(false);
   let faceMatchPending = $state(false);
   let solaceReady = $state(false);
 
@@ -47,14 +48,13 @@
   }
 
   function handleVideoFeed() {
+    skipVideoFeedSplash = true;
     currentView = 'videoFeed';
   }
 
   function handlePassportScan() {
-  console.log('handlePassportScan called');
-  currentView = 'passportScan';
+    currentView = 'passportScanner';
   }
-
 
 </script>
 
@@ -62,11 +62,11 @@
   <SplashScreen onEnroll={handleEnroll} onEnter={handleEnter} onWebcam={handleWebcamPublisher} onVideoFeed={handleVideoFeed} onPassportScan={handlePassportScan} />
 {:else if currentView === 'enrollment'}
   <EnrollmentForm onBack={() => currentView = 'splash'} />
-{:else if currentView === 'passportScan'}
+{:else if currentView === 'passportScanner'}
   <PassportScanner onEnrolled={() => currentView = 'splash'} />
 {:else if currentView === 'videoFeed'}
   {#if solaceReady}
-    <VideoFeedViewer {solaceClient} onBack={() => currentView = 'splash'} sessionId={urlSessionId} />
+    <VideoFeedViewer {solaceClient} onBack={() => currentView = 'splash'} sessionId={urlSessionId} skipSplash={skipVideoFeedSplash} />
   {:else}
     <div class="min-h-screen bg-gradient-to-br from-aero-bg via-white to-aero-bg flex items-center justify-center">
       <div class="text-center space-y-4">

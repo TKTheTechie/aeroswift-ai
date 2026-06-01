@@ -36,7 +36,7 @@ ENROLL_SERVICE_URL  = "https://ec2-18-206-222-103.compute-1.amazonaws.com/enroll
 SOLACE_HOST         = "mr-connection-xaa92v5e29b.messaging.solace.cloud"
 SOLACE_PORT         = 8883
 SOLACE_USERNAME     = "solace-cloud-client"
-SOLACE_PASSWORD     = "s9ntjlnh3hvc92md1qdd05a71l"
+SOLACE_PASSWORD     = "hkvt5hvttma95ndihauhi65odj"
 
 # State shared between endpoints
 nfc_state = {
@@ -283,4 +283,4 @@ if __name__ == "__main__":
     print("  GET  /nfc/status — poll NFC progress")
     print("  POST /enroll     — enroll into facial recognition")
     print("="*60)
-    app.run(host="0.0.0.0", port=3003, debug=False, use_reloader=False)
+    app.run(host="0.0.0.0", port=3003, debug=True, use_reloader=False)

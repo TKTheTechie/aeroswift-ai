@@ -5,7 +5,7 @@
   import Kangaroo from './models/Kangaroo.svelte';
   import Airplane from './models/Airplane.svelte';
   
-  let { isLoading = $bindable(true) } = $props();
+  let { isLoading = $bindable(true), cameraZ = 4 } = $props();
   
   let orbitAngle = $state(0);
   let smokeTrail = $state([]);
@@ -68,7 +68,7 @@
   }
 </script>
 
-<T.PerspectiveCamera makeDefault position={[0, 0, 4]} fov={65}>
+<T.PerspectiveCamera makeDefault position={[0, 0, cameraZ]} fov={65}>
   <OrbitControls 
     enableZoom={true}
     enablePan={false}

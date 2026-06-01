@@ -57,6 +57,20 @@
         isMatching = false;
         // faceDetectionActive stays false until an explicit FACE_SCAN_RESET arrives
       });
+
+      solaceClient.subscribeToTopic(FACE_SCAN_RESET_TOPIC, (payload) => {
+        if (payload?.reset === true) {
+          isMatching = false;
+          flyerId = '';
+          passengerInfo = '';
+          flightInfo = '';
+          flightStatus = '';
+          recommendation = null;
+          airportMap = null;
+          errorMessage = '';
+          onMatchReset?.();
+        }
+      });
     } catch (error) {
       console.error('PassengerInfo: Failed to subscribe to Solace topics:', error);
     }
@@ -127,50 +141,66 @@
       </div>
 
     {:else if flightInfo}
-      <div class="w-full space-y-3">
-        <div class="flex items-center gap-2 text-aero-dark">
-          <svg class="w-5 h-5 text-aero-teal flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-              clip-rule="evenodd" />
-          </svg>
-          <span class="text-sm font-semibold text-gray-500 uppercase tracking-wider">
-            ✅ Passenger verified · Frequent Flyer {flyerId}
-          </span>
+      <div class="w-full space-y-4">
+
+        <!-- Verified hero -->
+        <div class="bg-gradient-to-r from-green-500/10 to-aero-teal/10 border-2 border-green-400/40 rounded-2xl p-4 flex items-center gap-4">
+          <div class="w-14 h-14 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg shadow-green-500/30">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div class="min-w-0">
+            <p class="text-xs font-semibold text-green-600 uppercase tracking-widest">Passenger Verified</p>
+            <p class="text-2xl font-bold text-aero-dark leading-tight">
+              Frequent Flyer <span class="text-aero-teal">{flyerId}</span>
+            </p>
+            {#if passengerInfo}
+              <p class="text-base text-gray-600 mt-0.5">{passengerInfo}</p>
+            {/if}
+          </div>
         </div>
 
-        <div class="p-3 bg-gradient-to-br from-aero-bg to-white rounded-xl border border-aero-light/30 flex items-start gap-3">
-          <svg class="w-5 h-5 text-aero-teal flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-          </svg>
-          <div class="flex-1">
-            <p class="text-gray-800 text-sm leading-relaxed">{flightInfo}</p>
+        <!-- Flight details -->
+        <div class="bg-gradient-to-br from-aero-bg to-white rounded-2xl border border-aero-light/40 p-4 flex items-start gap-4">
+          <div class="w-10 h-10 bg-aero-teal/10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
+            <svg class="w-5 h-5 text-aero-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-semibold text-aero-teal uppercase tracking-widest mb-1">Flight Details</p>
+            <p class="text-base font-medium text-gray-800 leading-relaxed">{flightInfo}</p>
           </div>
           {#if flightStatus}
-            <span class="text-xs font-bold uppercase px-2 py-1 rounded-full border {statusBadgeClass(flightStatus)} flex-shrink-0">
+            <span class="text-sm font-bold uppercase px-3 py-1.5 rounded-full border-2 {statusBadgeClass(flightStatus)} flex-shrink-0">
               {flightStatus}
             </span>
           {/if}
         </div>
 
         {#if recommendation}
-          <div class="p-3 bg-blue-50 rounded-xl border border-blue-100">
-            <p class="text-xs font-semibold text-blue-500 uppercase tracking-wider mb-1">Recommendation</p>
-            <div class="flex items-start gap-2">
-              <p class="text-gray-800 text-sm leading-relaxed flex-1">{recommendation['flight-info'] ?? ''}</p>
-              {#if recommendation.status}
-                <span class="text-xs font-bold uppercase px-2 py-1 rounded-full border {statusBadgeClass(recommendation.status)} flex-shrink-0">
-                  {recommendation.status}
-                </span>
-              {/if}
+          <div class="bg-blue-50 rounded-2xl border border-blue-200 p-4 flex items-start gap-4">
+            <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
+              <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
             </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-semibold text-blue-500 uppercase tracking-widest mb-1">Agent Recommendation</p>
+              <p class="text-base font-medium text-gray-800 leading-relaxed">{recommendation['flight-info'] ?? ''}</p>
+            </div>
+            {#if recommendation.status}
+              <span class="text-sm font-bold uppercase px-3 py-1.5 rounded-full border-2 {statusBadgeClass(recommendation.status)} flex-shrink-0">
+                {recommendation.status}
+              </span>
+            {/if}
           </div>
         {/if}
 
         {#if airportMap}
           <div class="space-y-2">
-            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Airport Map</p>
+            <p class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Airport Map</p>
             {#if airportMap['map-location']}
               <img
                 src="/{airportMap['map-location'].split('/').pop()}"
@@ -179,25 +209,29 @@
               />
             {/if}
             {#if airportMap['map-description']}
-              <div class="text-gray-700 text-sm leading-relaxed prose prose-sm max-w-none">{@html airportMap['map-description']}</div>
+              <div class="text-gray-700 text-base leading-relaxed prose prose-sm max-w-none">{@html airportMap['map-description']}</div>
             {/if}
           </div>
         {/if}
+
       </div>
 
     {:else if flyerId}
-      <div class="flex items-center gap-4">
-        <svg class="w-8 h-8 text-aero-teal animate-spin flex-shrink-0" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-          </path>
-        </svg>
-        <div class="flex flex-col">
-          <span class="text-base font-semibold text-gray-700">
-            ✅ Identity verified — Frequent Flyer <span class="text-aero-teal">{flyerId}</span>
-          </span>
-          <span class="text-sm text-gray-400 mt-1">🤖 Contacting agent mesh for passenger profile & flight details...</span>
+      <div class="flex items-center gap-5">
+        <div class="w-14 h-14 flex-shrink-0 relative">
+          <svg class="w-14 h-14 text-aero-teal/20" fill="none" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"></circle>
+          </svg>
+          <svg class="absolute inset-0 w-14 h-14 text-aero-teal animate-spin" fill="none" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+        </div>
+        <div>
+          <p class="text-xs font-semibold text-green-600 uppercase tracking-widest">Identity Verified</p>
+          <p class="text-2xl font-bold text-aero-dark leading-tight">
+            Frequent Flyer <span class="text-aero-teal">{flyerId}</span>
+          </p>
+          <p class="text-sm text-gray-400 mt-1">Contacting agent mesh for profile &amp; flight details…</p>
         </div>
       </div>
 
