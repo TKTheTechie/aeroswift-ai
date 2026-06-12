@@ -81,10 +81,10 @@
       <div class="container mx-auto px-4 py-3 flex items-center gap-3">
         <div class="flex items-center gap-2">
           <div class="w-9 h-9 bg-gradient-to-br from-aero-teal to-aero-dark rounded-full flex items-center justify-center">
-            <span class="text-white text-lg font-bold">✈</span>
+            <span class="text-white text-lg font-bold">⚓</span>
           </div>
           <h1 class="text-xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-aero-teal to-aero-dark">
-            AeroSwift AI
+            Royal Caribbean
           </h1>
         </div>
         <button onclick={() => currentView = 'splash'} class="ml-auto text-sm text-aero-dark hover:text-aero-teal font-medium transition-colors">← Back</button>
@@ -109,10 +109,10 @@
       <div class="container mx-auto px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2">
         <div class="flex items-center gap-2 shrink-0">
           <div class="w-9 h-9 sm:w-12 sm:h-12 bg-gradient-to-br from-aero-teal to-aero-dark rounded-full flex items-center justify-center">
-            <span class="text-white text-lg sm:text-2xl font-bold">✈</span>
+            <span class="text-white text-lg sm:text-2xl font-bold">⚓</span>
           </div>
           <h1 class="text-xl sm:text-3xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-aero-teal to-aero-dark">
-            AeroSwift AI
+            Royal Caribbean
           </h1>
         </div>
         <div class="flex items-center gap-2 ml-auto shrink-0">

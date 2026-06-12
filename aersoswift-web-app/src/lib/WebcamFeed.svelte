@@ -82,18 +82,18 @@
       const bracketLen = Math.min(width, height) * 0.18;
 
       // Semi-transparent fill
-      ctx.fillStyle = 'rgba(26, 188, 156, 0.08)';
+      ctx.fillStyle = 'rgba(45, 156, 255, 0.08)';
       ctx.fillRect(x, y, width, height);
 
       // Main border
-      ctx.strokeStyle = '#1abc9c';
+      ctx.strokeStyle = '#2d9cff';
       ctx.lineWidth = 2;
       ctx.setLineDash([6, 3]);
       ctx.strokeRect(x, y, width, height);
       ctx.setLineDash([]);
 
       // Corner brackets (solid, thicker)
-      ctx.strokeStyle = '#1abc9c';
+      ctx.strokeStyle = '#2d9cff';
       ctx.lineWidth = 4;
       const corners = [
         [[x, y + bracketLen], [x, y], [x + bracketLen, y]],
@@ -113,7 +113,7 @@
       const label = `Face  ${score}%`;
       ctx.font = 'bold 13px Inter, sans-serif';
       const textW = ctx.measureText(label).width + 14;
-      ctx.fillStyle = '#1abc9c';
+      ctx.fillStyle = '#2d9cff';
       ctx.beginPath();
       ctx.roundRect(x, y - 26, textW, 22, 4);
       ctx.fill();
@@ -172,10 +172,10 @@
       </button>
       <div class="flex items-center gap-2">
         <div class="w-9 h-9 bg-gradient-to-br from-aero-teal to-aero-dark rounded-full flex items-center justify-center">
-          <span class="text-white text-lg font-bold">✈</span>
+          <span class="text-white text-lg font-bold">⚓</span>
         </div>
         <h1 class="text-xl sm:text-2xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-aero-teal to-aero-dark">
-          AeroSwift AI — Webcam Demo
+          Royal Caribbean — Webcam Demo
         </h1>
       </div>
       <div class="ml-auto flex items-center gap-2">

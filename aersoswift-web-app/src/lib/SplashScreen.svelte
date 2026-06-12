@@ -1,16 +1,13 @@
 <script>
   import { onMount } from 'svelte';
-  import { Canvas } from '@threlte/core';
-  import Scene from './Scene.svelte';
   import QRCode from 'qrcode';
 
   let { onEnroll, onEnter, onWebcam, onVideoFeed, onPassportScan } = $props();
-  let isLoading = $state(true);
   let qrCodeDataUrl = $state(null);
 
   onMount(async () => {
     const url = `${window.location.origin}/VideoFeed`;
-    qrCodeDataUrl = await QRCode.toDataURL(url, { width: 200, margin: 1, color: { dark: '#0d3b34', light: '#ffffff' } });
+    qrCodeDataUrl = await QRCode.toDataURL(url, { width: 200, margin: 1, color: { dark: '#00205b', light: '#ffffff' } });
   });
 
   const steps = [
@@ -18,7 +15,7 @@
       number: 1,
       label: 'Enroll',
       title: 'Register Your Identity',
-      description: 'Enroll your face or passport in the AeroSwift biometric database to enable instant recognition at the gate.',
+      description: 'Enroll your face or passport in the Royal Caribbean database to enable seamless guest recognition at boarding.',
       icon: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />`,
       actions: [
         { label: 'Manual Enrollment', handler: () => onEnroll?.() },
@@ -40,35 +37,23 @@
   ];
 </script>
 
-<div class="fixed inset-0 bg-gradient-to-br from-aero-dark via-[#0d2b26] to-aero-dark z-50 overflow-hidden">
+<div class="fixed inset-0 bg-gradient-to-br from-aero-dark via-[#001a4d] to-aero-dark z-50 overflow-hidden">
 
-  <!-- 3D Model — full screen -->
-  <div class="absolute inset-0">
-    {#if isLoading}
-      <div class="absolute inset-0 flex items-center justify-center z-10">
-        <div class="text-center space-y-3">
-          <div class="w-12 h-12 border-4 border-white/20 border-t-aero-teal rounded-full animate-spin mx-auto"></div>
-          <p class="text-white/60 text-sm">Loading 3D Scene</p>
-        </div>
-      </div>
-    {/if}
-    <Canvas>
-      <Scene bind:isLoading />
-    </Canvas>
-  </div>
-
-  <!-- Title overlay — top -->
-  <div class="absolute top-0 inset-x-0 z-10 text-center pt-4 pb-8 bg-gradient-to-b from-aero-dark/80 to-transparent pointer-events-none">
-    <h1 class="text-3xl md:text-4xl font-display font-bold text-white drop-shadow-2xl tracking-tight">
-      AeroSwift <span class="text-aero-teal">AI</span>
-    </h1>
-    <p class="mt-0.5 text-xs text-white/60 font-medium tracking-widest uppercase">
-      Next-Generation Passenger Recognition
+  <!-- Royal Caribbean logo — center -->
+  <div class="absolute inset-0 flex flex-col items-center justify-center px-6 pb-44 pointer-events-none">
+    <img
+      src="/rc-logo.webp"
+      alt="Royal Caribbean"
+      class="w-72 md:w-[26rem] max-w-[85vw] drop-shadow-[0_0_45px_rgba(45,156,255,0.4)]"
+      onerror={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling.style.display = 'block'; }}
+    />
+    <div style="display:none" class="text-center font-display font-extrabold text-white tracking-tight text-4xl md:text-6xl drop-shadow-2xl">
+      Royal <span class="text-aero-teal">Caribbean</span>
+    </div>
+    <p class="mt-8 text-xs md:text-sm text-white/70 font-medium tracking-[0.25em] uppercase">
+      Seamless Guest Recognition
     </p>
   </div>
-
-  <!-- Hint -->
-  <p class="absolute bottom-[13.5rem] inset-x-0 text-center text-white/25 text-xs z-10 pointer-events-none">Drag to rotate · Scroll to zoom</p>
 
   <!-- Step cards overlay — bottom -->
   <div class="absolute bottom-0 inset-x-0 z-10 px-4 pb-3 pt-10 bg-gradient-to-t from-aero-dark/95 via-aero-dark/60 to-transparent">
@@ -76,7 +61,7 @@
 
       {#each steps as step, i}
         <!-- Compact step card -->
-        <div class="group flex-1 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-aero-teal/60 backdrop-blur-sm rounded-xl p-2.5 transition-all duration-300 hover:shadow-[0_0_20px_rgba(26,188,156,0.2)] flex flex-col gap-1.5">
+        <div class="group flex-1 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-aero-teal/60 backdrop-blur-sm rounded-xl p-2.5 transition-all duration-300 hover:shadow-[0_0_20px_rgba(45,156,255,0.2)] flex flex-col gap-1.5">
           <div class="flex items-center gap-2">
             <span class="w-5 h-5 rounded-full bg-white/20 group-hover:bg-white/30 text-white font-bold text-[10px] flex items-center justify-center transition-colors shrink-0">
               {step.number}
@@ -123,7 +108,7 @@
       </div>
 
       <!-- Step 3 — Watch -->
-      <div class="group flex-1 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-aero-teal/60 backdrop-blur-sm rounded-xl p-2.5 transition-all duration-300 hover:shadow-[0_0_20px_rgba(26,188,156,0.2)] flex flex-col gap-1.5">
+      <div class="group flex-1 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-aero-teal/60 backdrop-blur-sm rounded-xl p-2.5 transition-all duration-300 hover:shadow-[0_0_20px_rgba(45,156,255,0.2)] flex flex-col gap-1.5">
         <div class="flex items-center gap-2">
           <span class="w-5 h-5 rounded-full bg-white/20 group-hover:bg-white/30 text-white font-bold text-[10px] flex items-center justify-center transition-colors shrink-0">3</span>
           <span class="text-white font-semibold text-xs">Watch on Another Device</span>

@@ -440,12 +440,12 @@
     <div class="container mx-auto px-4 py-3 flex items-center gap-3">
       <div class="flex items-center gap-2">
         <div class="w-9 h-9 bg-gradient-to-br from-aero-teal to-aero-dark rounded-full flex items-center justify-center">
-          <span class="text-white text-lg font-bold">&#9992;</span>
+          <span class="text-white text-lg font-bold">&#9875;</span>
         </div>
         <h1 class="text-xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-aero-teal to-aero-dark">
-          AeroSwift AI
+          Royal Caribbean
         </h1>
-        <span class="text-gray-400 text-sm font-body ml-1">/ Flyer Enrollment</span>
+        <span class="text-gray-400 text-sm font-body ml-1">/ Guest Enrollment</span>
       </div>
       <button
         onclick={onBack}

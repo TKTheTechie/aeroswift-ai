@@ -265,16 +265,16 @@
       const score = Math.round(det.score * 100);
       const bracketLen = Math.min(width, height) * 0.18;
 
-      ctx.fillStyle = 'rgba(26, 188, 156, 0.08)';
+      ctx.fillStyle = 'rgba(45, 156, 255, 0.08)';
       ctx.fillRect(x, y, width, height);
 
-      ctx.strokeStyle = '#1abc9c';
+      ctx.strokeStyle = '#2d9cff';
       ctx.lineWidth = 2;
       ctx.setLineDash([6, 3]);
       ctx.strokeRect(x, y, width, height);
       ctx.setLineDash([]);
 
-      ctx.strokeStyle = '#1abc9c';
+      ctx.strokeStyle = '#2d9cff';
       ctx.lineWidth = 4;
       const corners = [
         [[x, y + bracketLen], [x, y], [x + bracketLen, y]],
@@ -293,7 +293,7 @@
       const label = `Face  ${score}%`;
       ctx.font = 'bold 13px Inter, sans-serif';
       const textW = ctx.measureText(label).width + 14;
-      ctx.fillStyle = '#1abc9c';
+      ctx.fillStyle = '#2d9cff';
       ctx.beginPath();
       ctx.roundRect(x, y - 26, textW, 22, 4);
       ctx.fill();
@@ -313,7 +313,7 @@
     const viewerUrl = sessionId
       ? `${window.location.origin}/VideoFeed?sessionId=${sessionId}`
       : `${window.location.origin}/VideoFeed`;
-    qrCodeDataUrl = await QRCode.toDataURL(viewerUrl, { width: 300, margin: 1, color: { dark: '#0d3b34', light: '#ffffff' } });
+    qrCodeDataUrl = await QRCode.toDataURL(viewerUrl, { width: 300, margin: 1, color: { dark: '#00205b', light: '#ffffff' } });
 
     await loadModels();
     await startCamera();

@@ -153,7 +153,7 @@
           <div class="min-w-0">
             <p class="text-xs font-semibold text-green-600 uppercase tracking-widest">Passenger Verified</p>
             <p class="text-2xl font-bold text-aero-dark leading-tight">
-              Frequent Flyer <span class="text-aero-teal">{flyerId}</span>
+              Cruise Passenger <span class="text-aero-teal">{flyerId}</span>
             </p>
             {#if passengerInfo}
               <p class="text-base text-gray-600 mt-0.5">{passengerInfo}</p>

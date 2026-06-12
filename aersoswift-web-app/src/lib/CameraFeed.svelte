@@ -20,7 +20,7 @@
 
   onMount(async () => {
     const viewerUrl = `${window.location.origin}/VideoFeed`;
-    qrCodeDataUrl = await QRCode.toDataURL(viewerUrl, { width: 300, margin: 1, color: { dark: '#0d3b34', light: '#ffffff' } });
+    qrCodeDataUrl = await QRCode.toDataURL(viewerUrl, { width: 300, margin: 1, color: { dark: '#00205b', light: '#ffffff' } });
 
     try {
       await solaceClient.subscribe(VIDEO_TOPIC, handleVideoMessage);
@@ -70,7 +70,7 @@
       fearful: '#8b5cf6',
       disgusted: '#ec4899'
     };
-    return colors[emotion] || '#00d4ff';
+    return colors[emotion] || '#2d9cff';
   }
 
   function getEmotionEmoji(emotion) {
@@ -110,7 +110,7 @@
       const scaledWidth = width * scaleX;
       const scaledHeight = height * scaleY;
 
-      const boxColor = hasEmotions ? getEmotionColor(detection.dominantEmotion) : '#00d4ff';
+      const boxColor = hasEmotions ? getEmotionColor(detection.dominantEmotion) : '#2d9cff';
 
       ctx.strokeStyle = boxColor;
       ctx.lineWidth = 3;
@@ -134,7 +134,7 @@
         const textHeight = 20;
         const yOffset = scaledY - ((labels.length - labelIndex) * lineHeight);
 
-        ctx.fillStyle = labelIndex === 0 ? 'rgba(0, 212, 255, 0.9)' : `${boxColor}dd`;
+        ctx.fillStyle = labelIndex === 0 ? 'rgba(45, 156, 255, 0.9)' : `${boxColor}dd`;
         ctx.fillRect(scaledX, yOffset, textWidth, textHeight);
 
         ctx.fillStyle = '#fff';
